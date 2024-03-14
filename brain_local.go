@@ -1,9 +1,11 @@
 package zenmodel
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -14,9 +16,12 @@ func NewBrainLocal(brainprint Brainprint, withOpts ...Option) *BrainLocal {
 			rateLimiterBaseDelay: 5 * time.Millisecond,
 			rateLimiterMaxDelay:  1000 * time.Second,
 			workerNum:            5,
+			memoryNumCounters:    1e7,     // number of keys to track frequency of (10M).
+			memoryMaxCost:        1 << 30, // maximum cost of cache (1GB).
 		},
-		queue: nil,
-		state: BrainStateSleeping,
+		memory: nil,
+		queue:  nil,
+		state:  BrainStateSleeping,
 	}
 
 	// maintainer
@@ -33,8 +38,8 @@ type BrainLocal struct {
 	// Brainprint is in the Running state when there are 1 or more Activate neuron
 	// or 1 or more StandBy Edge.
 	state BrainState
-	// brain context
-	context Context
+	// brain memory
+	memory *ristretto.Cache
 
 	brainLocalOptions
 	// local maintainer queue
@@ -45,9 +50,11 @@ type brainLocalOptions struct {
 	rateLimiterBaseDelay time.Duration
 	rateLimiterMaxDelay  time.Duration
 	workerNum            int
+	memoryNumCounters    int64
+	memoryMaxCost        int64
 }
 
-func (b *BrainLocal) Entry() {
+func (b *BrainLocal) Entry() error {
 	// get all entry links
 	linkIDs := make([]string, 0)
 	for _, link := range b.linkMap {
@@ -56,15 +63,46 @@ func (b *BrainLocal) Entry() {
 		}
 	}
 
-	b.trigLinks(linkIDs...)
-
-	return
+	return b.trigLinks(linkIDs...)
 }
 
-func (b *BrainLocal) TrigLinks(linkIDs ...string) {
-	b.trigLinks(linkIDs...)
+func (b *BrainLocal) TrigLinks(linkIDs ...string) error {
+	return b.trigLinks(linkIDs...)
+}
 
-	return
+func (b *BrainLocal) SetMemory(keysAndValues ...interface{}) error {
+	if len(keysAndValues)%2 != 0 {
+		return fmt.Errorf("key and value are not paired")
+	}
+	if err := b.ensureMemoryInit(); err != nil {
+		// TODO wrap error
+		return err
+	}
+
+	for i := 0; i < len(keysAndValues); i += 2 {
+		k := keysAndValues[i]
+		v := keysAndValues[i+1]
+		b.memory.Set(k, v, 1) // TODO maybe calculate cost
+	}
+	b.memory.Wait()
+
+	return nil
+}
+
+func (b *BrainLocal) GetMemory(key interface{}) (interface{}, bool) {
+	if b.memory == nil {
+		return nil, false
+	}
+
+	return b.memory.Get(key)
+}
+
+func (b *BrainLocal) DeleteMemory(key interface{}) {
+	if b.memory == nil {
+		return
+	}
+
+	b.memory.Del(key)
 }
 
 func (b *BrainLocal) Start() {
@@ -134,9 +172,14 @@ func (b *BrainLocal) processFromQueue() bool {
 	return true
 }
 
-func (b *BrainLocal) trigLinks(linkIDs ...string) {
+func (b *BrainLocal) trigLinks(linkIDs ...string) error {
 	if len(linkIDs) == 0 {
-		return
+		return nil
+	}
+
+	if err := b.ensureMemoryInit(); err != nil {
+		// TODO wrap error
+		return err
 	}
 
 	// ensure brain maintainer start
@@ -155,7 +198,7 @@ func (b *BrainLocal) trigLinks(linkIDs ...string) {
 	}
 	wg.Wait()
 
-	return
+	return nil
 }
 
 func (b *BrainLocal) ensureStart() {
@@ -354,6 +397,29 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 			})
 		}
 	}
+
+	return nil
+}
+
+func (b *BrainLocal) ensureMemoryInit() error {
+	if b.memory != nil {
+		return nil
+	}
+
+	return b.initMemory()
+}
+
+func (b *BrainLocal) initMemory() error {
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: b.memoryNumCounters, // number of keys to track frequency of (10M).
+		MaxCost:     b.memoryMaxCost,     // maximum cost of cache (1GB).
+		BufferItems: 64,                  // number of keys per Get buffer.
+	})
+	if err != nil {
+		// TODO Wrap error
+		return err
+	}
+	b.memory = cache
 
 	return nil
 }

@@ -8,16 +8,14 @@ const (
 
 type Brain interface {
 	// TrigLinks 触发指定 Links
-	TrigLinks(linkIDs ...string)
+	TrigLinks(linkIDs ...string) error
 	// Entry 触发所有 Entry Links
-	Entry()
+	Entry() error
 
-	//SetContext()
-	//SetContextUnsafe()
-	//SetContextField()
-	//SetContextFieldunsafe()
-	//GetContext()
-	//GetOutput() // 如果是 stream , 则是 stream channel 中的元素拼接而成的结果
-	//WatchOutput()
-	//GetStatus()
+	SetMemory(keysAndValues ...interface{}) error
+	GetMemory(key interface{}) (interface{}, bool)
+	DeleteMemory(key interface{})
+
+	// SetMemoryStream()
+	// WatchMemoryStream()
 }
