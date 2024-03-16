@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	DefaultConductGroupName = "default"
-	EndNeuronID             = "END_NEURON"
+	DefaultCastGroupName = "default"
+	EndNeuronID          = "END_NEURON"
 )
 
 var (
 	defaultSelectFn = func(brain Brain) string {
-		return DefaultConductGroupName
+		return DefaultCastGroupName
 	}
 )
 
@@ -22,8 +22,8 @@ func newNeuron() *Neuron {
 	return &Neuron{
 		id:    utils.GenUUID(),
 		state: NeuronStateInhibited,
-		conductGroups: map[string]ConductGroup{
-			DefaultConductGroupName: map[string]bool{},
+		castGroups: map[string]CastGroup{
+			DefaultCastGroupName: map[string]bool{},
 		},
 		triggerGroups: map[string]TriggerGroup{},
 		selectFn:      defaultSelectFn,
@@ -35,8 +35,8 @@ func newEndNeuron() *Neuron {
 	n := &Neuron{
 		id:    EndNeuronID,
 		state: NeuronStateInhibited,
-		conductGroups: map[string]ConductGroup{
-			DefaultConductGroupName: map[string]bool{},
+		castGroups: map[string]CastGroup{
+			DefaultCastGroupName: map[string]bool{},
 		},
 		triggerGroups: map[string]TriggerGroup{},
 		selectFn:      defaultSelectFn,
@@ -63,7 +63,7 @@ type Neuron struct {
 	// 触发组,触发组是用来控制神经元的触发条件
 	triggerGroups TriggerGroups
 	// 传导组,传导组是用来控制神经元之间的传导关系
-	conductGroups ConductGroups
+	castGroups CastGroups
 	// 在 neuron 运行成功之后通过 selectFn 决定传导到哪一个传导组
 	selectFn func(brain Brain) string
 
@@ -77,11 +77,11 @@ type TriggerGroups map[string]TriggerGroup
 // TriggerGroup link IDs
 type TriggerGroup []string
 
-// ConductGroups map of conduct group name and ConductGroup
-type ConductGroups map[string]ConductGroup
+// CastGroups map of cast group name and CastGroup
+type CastGroups map[string]CastGroup
 
-// ConductGroup map[linkID]true
-type ConductGroup map[string]bool
+// CastGroup map[linkID]true
+type CastGroup map[string]bool
 
 type NeuronState string
 
@@ -100,7 +100,7 @@ func (n *Neuron) DeepCopy() *Neuron {
 		processor:     n.processor.DeepCopy(),
 		selectFn:      n.selectFn,
 		triggerGroups: make(TriggerGroups),
-		conductGroups: make(ConductGroups),
+		castGroups:    make(CastGroups),
 		labels:        make(map[string]string),
 	}
 	cp.count.process = n.count.process
@@ -111,12 +111,12 @@ func (n *Neuron) DeepCopy() *Neuron {
 		copy(newTg, tg)
 		cp.triggerGroups[tgName] = newTg
 	}
-	for cgName, cg := range n.conductGroups {
-		newCg := make(ConductGroup)
+	for cgName, cg := range n.castGroups {
+		newCg := make(CastGroup)
 		for linkId, val := range cg {
 			newCg[linkId] = val
 		}
-		cp.conductGroups[cgName] = newCg
+		cp.castGroups[cgName] = newCg
 	}
 	for label, value := range n.labels {
 		cp.labels[label] = value
@@ -132,27 +132,27 @@ func (n *Neuron) SetLabels(l map[string]string) {
 	n.labels = l
 }
 
-func (n *Neuron) addLinkToDefaultConductGroup(links ...*Link) error {
-	return n.addLinkToConductGroup(DefaultConductGroupName, links...)
+func (n *Neuron) addLinkToDefaultCastGroup(links ...*Link) error {
+	return n.addLinkToCastGroup(DefaultCastGroupName, links...)
 }
 
-// addLinkToConductGroup 把指定 links 加到指定 group, group 如果不存在则新建 group
+// addLinkToCastGroup 把指定 links 加到指定 group, group 如果不存在则新建 group
 // 指定 link 如果原本属于 default group，则先从 default group 中移除
 // 指定 link 如果原本属于 其他非 default group，不会从其他group 中移除
 // 允许添加空 link 的组
 // TODO 增加线程安全， add lock
-func (n *Neuron) addLinkToConductGroup(groupName string, links ...*Link) error {
+func (n *Neuron) addLinkToCastGroup(groupName string, links ...*Link) error {
 	// init
-	if n.conductGroups == nil {
-		n.conductGroups = map[string]ConductGroup{
-			DefaultConductGroupName: map[string]bool{},
+	if n.castGroups == nil {
+		n.castGroups = map[string]CastGroup{
+			DefaultCastGroupName: map[string]bool{},
 		}
 	}
-	if n.conductGroups[DefaultConductGroupName] == nil {
-		n.conductGroups[DefaultConductGroupName] = map[string]bool{}
+	if n.castGroups[DefaultCastGroupName] == nil {
+		n.castGroups[DefaultCastGroupName] = map[string]bool{}
 	}
-	if n.conductGroups[groupName] == nil {
-		n.conductGroups[groupName] = map[string]bool{}
+	if n.castGroups[groupName] == nil {
+		n.castGroups[groupName] = map[string]bool{}
 	}
 
 	for _, link := range links {
@@ -161,48 +161,48 @@ func (n *Neuron) addLinkToConductGroup(groupName string, links ...*Link) error {
 			return fmt.Errorf("link %s not from neuron %s", link.id, n.id)
 		}
 		// 指定 link 如果原本属于 default group，则先从 default group 中移除
-		if n.conductGroups[DefaultConductGroupName][link.id] {
-			delete(n.conductGroups[DefaultConductGroupName], link.id)
+		if n.castGroups[DefaultCastGroupName][link.id] {
+			delete(n.castGroups[DefaultCastGroupName], link.id)
 		}
 		// add link to group
-		n.conductGroups[groupName][link.id] = true
+		n.castGroups[groupName][link.id] = true
 	}
 
 	return nil
 }
 
-// deleteConductGroup 删除一个组中的所有 link, 并且删除组
+// deleteCastGroup 删除一个组中的所有 link, 并且删除组
 // 不能通过此方法删除 default group, 删除 group 后，孤立的 out link 会被再次加入 default group
 // TODO 增加线程安全， add lock
-func (n *Neuron) deleteConductGroup(groupName string) error {
-	if groupName == DefaultConductGroupName {
-		return fmt.Errorf("cannot delete default conduct group")
+func (n *Neuron) deleteCastGroup(groupName string) error {
+	if groupName == DefaultCastGroupName {
+		return fmt.Errorf("cannot delete default cast group")
 	}
-	if n.conductGroups[DefaultConductGroupName] == nil {
-		n.conductGroups[DefaultConductGroupName] = map[string]bool{}
+	if n.castGroups[DefaultCastGroupName] == nil {
+		n.castGroups[DefaultCastGroupName] = map[string]bool{}
 	}
-	if len(n.conductGroups[groupName]) == 0 { // 组不存在，或已经是空组
-		delete(n.conductGroups, groupName)
+	if len(n.castGroups[groupName]) == 0 { // 组不存在，或已经是空组
+		delete(n.castGroups, groupName)
 	}
 
 	ungroupLinks := []string{}
-	for linkID, _ := range n.conductGroups[groupName] {
+	for linkID, _ := range n.castGroups[groupName] {
 		ungroupLinks = append(ungroupLinks, linkID)
 	}
 	// delete
-	delete(n.conductGroups, groupName)
+	delete(n.castGroups, groupName)
 
 	for _, ungroupLink := range ungroupLinks {
 		// check if link isolate(not contains in other group), add to default group
-		if !n.conductGroups.containsLink(ungroupLink) {
-			n.conductGroups[DefaultConductGroupName][ungroupLink] = true
+		if !n.castGroups.containsLink(ungroupLink) {
+			n.castGroups[DefaultCastGroupName][ungroupLink] = true
 		}
 	}
 
 	return nil
 }
 
-func (cgs ConductGroups) containsLink(linkID string) bool {
+func (cgs CastGroups) containsLink(linkID string) bool {
 	for _, group := range cgs {
 		for curLinkID, _ := range group {
 			if linkID == curLinkID {
@@ -268,13 +268,13 @@ func (n *Neuron) bindProcessor(p Processor) {
 
 func (n *Neuron) String() string {
 	ts, _ := json.Marshal(n.triggerGroups)
-	cs, _ := json.Marshal(n.conductGroups)
+	cs, _ := json.Marshal(n.castGroups)
 	ls, _ := json.Marshal(n.labels)
 	return fmt.Sprintf(`{
 	"id": "%s",
 	"state": "%s",
 	"trigger_groups": %s,
-	"conduct_groups": %s,
+	"cast_groups": %s,
 	"labels": %s
 }`, n.id, n.state, ts, cs, ls)
 }

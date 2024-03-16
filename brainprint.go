@@ -70,7 +70,7 @@ func (b *Brainprint) GetNeuron(id string) *Neuron {
 func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
 	// check neuron exist in brain
 	if fromID == EndNeuronID {
-		return "", fmt.Errorf("END neuron cannot conduct to any neuron")
+		return "", fmt.Errorf("END neuron cannot cast to any neuron")
 	}
 	if toID == EndNeuronID {
 		b.ensureEndNeuron()
@@ -92,11 +92,11 @@ func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
 		// error
 		return "", errors.Wrapf(err, "add trigger group with link error")
 	}
-	if err := from.addLinkToDefaultConductGroup(link); err != nil {
+	if err := from.addLinkToDefaultCastGroup(link); err != nil {
 		// rollback
 		to.deleteTriggerGroup(link)
 		// error
-		return "", errors.Wrapf(err, "add link to default conduct group error")
+		return "", errors.Wrapf(err, "add link to default cast group error")
 	}
 	b.linkMap[link.id] = link
 
@@ -144,11 +144,11 @@ func (b *Brainprint) AddEndLink(fromID string) (string, error) {
 		// error
 		return "", errors.Wrapf(err, "add trigger group with link error")
 	}
-	if err := from.addLinkToDefaultConductGroup(link); err != nil {
+	if err := from.addLinkToDefaultCastGroup(link); err != nil {
 		// rollback
 		end.deleteTriggerGroup(link)
 		// error
-		return "", errors.Wrapf(err, "add link to default conduct group error")
+		return "", errors.Wrapf(err, "add link to default cast group error")
 	}
 
 	b.linkMap[link.id] = link
@@ -156,10 +156,10 @@ func (b *Brainprint) AddEndLink(fromID string) (string, error) {
 	return link.id, nil
 }
 
-// AddLinkToConductGroup add links to specific named conduct group.
+// AddLinkToCastGroup add links to specific named cast group.
 // if group not exist, create the group. Groups that allow empty links.
 // The specified link will remove from the default group, if it originally belonged to the default group.
-func (b *Brainprint) AddLinkToConductGroup(neuronID string, groupName string, linkIDs ...string) error {
+func (b *Brainprint) AddLinkToCastGroup(neuronID string, groupName string, linkIDs ...string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
 		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
@@ -174,17 +174,17 @@ func (b *Brainprint) AddLinkToConductGroup(neuronID string, groupName string, li
 		links = append(links, link)
 	}
 
-	return neu.addLinkToConductGroup(groupName, links...)
+	return neu.addLinkToCastGroup(groupName, links...)
 }
 
-// DeleteConductGroup ...
-func (b *Brainprint) DeleteConductGroup(neuronID string, groupName string) error {
+// DeleteCastGroup ...
+func (b *Brainprint) DeleteCastGroup(neuronID string, groupName string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
 		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
 	}
 
-	return neu.deleteConductGroup(groupName)
+	return neu.deleteCastGroup(groupName)
 }
 
 // AddTriggerGroup ...
@@ -236,8 +236,8 @@ func (b *Brainprint) Build(withOpts ...Option) Brain {
 	return brain
 }
 
-// BindConductGroupSelectFunc bind custom select function of conduct group, default select default conduct group.
-func (b *Brainprint) BindConductGroupSelectFunc(neuronID string, selectFn func(brain Brain) string) error {
+// BindCastGroupSelectFunc bind custom select function of cast group, default select default cast group.
+func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brain Brain) string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
 		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)

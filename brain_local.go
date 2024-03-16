@@ -377,7 +377,7 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	}
 
 	// out-link set wait
-	for _, group := range neuron.conductGroups {
+	for _, group := range neuron.castGroups {
 		for linkID, _ := range group {
 			link := b.GetLink(linkID)
 			link.state = LinkStateWait
@@ -396,8 +396,8 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	neuron.count.succeed++
 	// 决策出边/传导组
 	selected := neuron.selectFn(b)
-	// 选中的 conduct group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
-	for linkID, _ := range neuron.conductGroups[selected] {
+	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
+	for linkID, _ := range neuron.castGroups[selected] {
 		link := b.GetLink(linkID)
 		if link.state == LinkStateWait {
 			link.state = LinkStateReady

@@ -22,7 +22,7 @@ func main() {
 		return
 	}
 
-	//bp.AddLinkToConductGroup()
+	//bp.AddLinkToCastGroup()
 	//bp.AddTriggerGroup()
 	brain := bp.Build()
 
