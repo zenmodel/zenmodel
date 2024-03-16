@@ -34,7 +34,11 @@ func main() {
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: "What is the weather in Boston today?"}})
 
-	time.Sleep(20 * time.Second)
+	// block process util brain sleeping
+	for brain.GetState() != zenmodel.BrainStateSleeping {
+		time.Sleep(1 * time.Second)
+	}
+
 	v, found := brain.GetMemory("messages")
 	if found {
 		messages, _ := json.Marshal(v)
