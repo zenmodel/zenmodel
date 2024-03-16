@@ -112,8 +112,8 @@ func (b *BrainLocal) DeleteMemory(key interface{}) {
 	b.memory.Del(key)
 }
 
-func (b *BrainLocal) GetMaintainer() Maintainer {
-	return b
+func (b *BrainLocal) GetState() BrainState {
+	return b.state
 }
 
 func (b *BrainLocal) Start() {
@@ -156,6 +156,7 @@ func (b *BrainLocal) processFromQueue() bool {
 	defer b.queue.Done(msg)
 
 	message := msg.(Message)
+	fmt.Printf("maintainer process msg: %+v\n", message)
 	switch message.kind {
 	case MessageKindLink:
 		// 1. link message
@@ -170,14 +171,20 @@ func (b *BrainLocal) processFromQueue() bool {
 			// TODO log error
 			return true
 		}
-
+	case MessageKindBrain:
+		if err := b.HandleBrain(message.Action); err != nil {
+			// TODO log error
+			return true
+		}
 	default:
 		// log unsupported message kind
 		return true
 	}
 
 	// 3. 重新计算 brain 状态并刷新
-	b.RefreshState()
+	if message.kind != MessageKindBrain {
+		b.RefreshState()
+	}
 
 	b.queue.Forget(msg)
 	return true
@@ -242,16 +249,20 @@ func (b *BrainLocal) trigLink(wg *sync.WaitGroup, link *Link) {
 func (b *BrainLocal) RefreshState() {
 	_, activateCnt := b.getNeuronCountByState()
 	_, waitCnt, readyCnt := b.getLinkCountByState()
+	// TODO debug log
+	//fmt.Printf("refresh brain state, neuronInhibit: %d, neuronActivate: %d, linkInit: %d, linkWait: %d, linkRedy: %d\n",
+	//	inhibitCnt, activateCnt, initCnt, waitCnt, readyCnt)
 	// set to running
 
-	// set to sleeping, and shutdown maintainer
+	// send brain sleep message
 	if activateCnt+waitCnt+readyCnt == 0 {
-		b.Shutdown()
-		b.state = BrainStateSleeping
+		b.SendMessage(Message{
+			kind:   MessageKindBrain,
+			Action: MessageActionBrainSleep,
+		})
 	} else { // > 0
 		b.state = BrainStateRunning
 	}
-
 }
 
 func (b *BrainLocal) getNeuronCountByState() (int, int) {
@@ -326,6 +337,29 @@ func (b *BrainLocal) HandleNeuron(action MessageAction, neuronID string) error {
 	return nil
 }
 
+func (b *BrainLocal) HandleBrain(action MessageAction) error {
+	switch action {
+	case MessageActionBrainSleep:
+		b.Shutdown()
+		b.allLinkNeuronInhibit()
+		b.state = BrainStateSleeping
+		return nil
+	default:
+		// TODO unsupported brain action error
+	}
+
+	return nil
+}
+
+func (b *BrainLocal) allLinkNeuronInhibit() {
+	for _, link := range b.linkMap {
+		link.state = LinkStateInit
+	}
+	for _, neuron := range b.neuronMap {
+		neuron.state = NeuronStateInhibited
+	}
+}
+
 func (b *BrainLocal) tryActivateNeuron(neuron *Neuron) error {
 	if neuron.state == NeuronStateActivated {
 		// TODO log already activated
@@ -335,6 +369,17 @@ func (b *BrainLocal) tryActivateNeuron(neuron *Neuron) error {
 	should := b.ifNeuronShouldActivate(neuron)
 	if !should {
 		// TODO log
+		return nil
+	}
+
+	// should END, send brain sleep message
+	if neuron.id == EndNeuronID {
+		// TODO log
+		fmt.Printf("Arrival at END neuron.\n")
+		b.SendMessage(Message{
+			kind:   MessageKindBrain,
+			Action: MessageActionBrainSleep,
+		})
 		return nil
 	}
 

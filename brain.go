@@ -18,8 +18,8 @@ type Brain interface {
 	SetMemory(keysAndValues ...interface{}) error
 	GetMemory(key interface{}) (interface{}, bool)
 	DeleteMemory(key interface{})
-
-	GetMaintainer() Maintainer
+	// GetState get brain state
+	GetState() BrainState
 
 	// SetMemoryStream()
 	// WatchMemoryStream()

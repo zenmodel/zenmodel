@@ -17,10 +17,12 @@ type MessageAction string
 const (
 	MessageKindNeuron MessageKind = "neuron"
 	MessageKindLink   MessageKind = "link"
+	MessageKindBrain  MessageKind = "brain"
 
-	MessageActionLinkInit                        = "link_init"
-	MessageActionLinkReady                       = "link_ready"
-	MessageActionLinkWait                        = "link_wait"
+	MessageActionLinkInit          MessageAction = "link_init"
+	MessageActionLinkReady         MessageAction = "link_ready"
+	MessageActionLinkWait          MessageAction = "link_wait"
 	MessageActionNeuronTryActivate MessageAction = "try_activate_neuron"
 	MessageActionNeuronTryInhibit  MessageAction = "try_inhibit_neuron"
+	MessageActionBrainSleep        MessageAction = "brain_sleep"
 )

@@ -1,7 +1,5 @@
 package zenmodel
 
-import "fmt"
-
 type Processor interface {
 	Process(brain Brain) error
 	DeepCopy() Processor
@@ -26,10 +24,6 @@ func (p *DefaultProcessor) DeepCopy() Processor {
 type EndProcessor struct{}
 
 func (p *EndProcessor) Process(brain Brain) error {
-	// TODO log END
-	fmt.Printf("Arrival at END neuron.")
-	brain.GetMaintainer().Shutdown()
-
 	return nil
 }
 

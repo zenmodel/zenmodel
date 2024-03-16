@@ -33,14 +33,9 @@ func newNeuron() *Neuron {
 
 func newEndNeuron() *Neuron {
 	n := &Neuron{
-		id:    EndNeuronID,
-		state: NeuronStateInhibited,
-		castGroups: map[string]CastGroup{
-			DefaultCastGroupName: map[string]bool{},
-		},
+		id:            EndNeuronID,
+		state:         NeuronStateInhibited,
 		triggerGroups: map[string]TriggerGroup{},
-		selectFn:      defaultSelectFn,
-		labels:        map[string]string{},
 	}
 	n.bindProcessor(&EndProcessor{})
 
