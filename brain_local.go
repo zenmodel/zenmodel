@@ -66,6 +66,13 @@ func (b *BrainLocal) Entry() error {
 	return b.trigLinks(linkIDs...)
 }
 
+func (b *BrainLocal) EntryWithMemory(keysAndValues ...interface{}) error {
+	if err := b.SetMemory(keysAndValues...); err != nil {
+		return err
+	}
+
+	return b.Entry()
+}
 func (b *BrainLocal) TrigLinks(linkIDs ...string) error {
 	return b.trigLinks(linkIDs...)
 }
@@ -103,6 +110,10 @@ func (b *BrainLocal) DeleteMemory(key interface{}) {
 	}
 
 	b.memory.Del(key)
+}
+
+func (b *BrainLocal) GetMaintainer() Maintainer {
+	return b
 }
 
 func (b *BrainLocal) Start() {
