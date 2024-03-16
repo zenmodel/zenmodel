@@ -9,6 +9,7 @@ import (
 
 const (
 	DefaultConductGroupName = "default"
+	EndNeuronID             = "END_NEURON"
 )
 
 var (
@@ -28,6 +29,22 @@ func newNeuron() *Neuron {
 		selectFn:      defaultSelectFn,
 		labels:        map[string]string{},
 	}
+}
+
+func newEndNeuron() *Neuron {
+	n := &Neuron{
+		id:    EndNeuronID,
+		state: NeuronStateInhibited,
+		conductGroups: map[string]ConductGroup{
+			DefaultConductGroupName: map[string]bool{},
+		},
+		triggerGroups: map[string]TriggerGroup{},
+		selectFn:      defaultSelectFn,
+		labels:        map[string]string{},
+	}
+	n.bindProcessor(&EndProcessor{})
+
+	return n
 }
 
 type Neuron struct {

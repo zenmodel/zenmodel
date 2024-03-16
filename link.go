@@ -8,6 +8,7 @@ import (
 
 const (
 	EntryLinkFrom = "EXTERNAL_SIGNAL"
+	EndLinkTo     = EndNeuronID
 )
 
 type Link struct {

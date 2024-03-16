@@ -69,6 +69,12 @@ func (b *Brainprint) GetNeuron(id string) *Neuron {
 
 func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
 	// check neuron exist in brain
+	if fromID == EndNeuronID {
+		return "", fmt.Errorf("END neuron cannot conduct to any neuron")
+	}
+	if toID == EndNeuronID {
+		b.ensureEndNeuron()
+	}
 	from := b.GetNeuron(fromID)
 	if from == nil {
 		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", fromID)
@@ -114,6 +120,35 @@ func (b *Brainprint) AddEntryLink(toID string) (string, error) {
 
 		// error
 		return "", errors.Wrapf(err, "add trigger group with link error")
+	}
+
+	b.linkMap[link.id] = link
+
+	return link.id, nil
+}
+
+// AddEndLink add link from specific neuron to END neuron, if END neuron not exist, create it.
+func (b *Brainprint) AddEndLink(fromID string) (string, error) {
+	b.ensureEndNeuron()
+	end := b.GetNeuron(EndNeuronID)
+	from := b.GetNeuron(fromID)
+	if from == nil {
+		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", fromID)
+	}
+
+	link := newLink(from, end)
+
+	if err := end.addTriggerGroup(link); err != nil {
+		// rollback, do nothing
+
+		// error
+		return "", errors.Wrapf(err, "add trigger group with link error")
+	}
+	if err := from.addLinkToDefaultConductGroup(link); err != nil {
+		// rollback
+		end.deleteTriggerGroup(link)
+		// error
+		return "", errors.Wrapf(err, "add link to default conduct group error")
 	}
 
 	b.linkMap[link.id] = link
@@ -211,6 +246,24 @@ func (b *Brainprint) BindConductGroupSelectFunc(neuronID string, selectFn func(b
 	neu.selectFn = selectFn
 
 	return nil
+}
+
+func (b *Brainprint) HasEndNeuron() bool {
+	for nid, _ := range b.neuronMap {
+		if nid == EndNeuronID {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (b *Brainprint) ensureEndNeuron() {
+	if b.HasEndNeuron() {
+		return
+	}
+	neuron := newEndNeuron()
+	b.neuronMap[neuron.id] = neuron
 }
 
 func (b *Brainprint) String() string {
