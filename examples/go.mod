@@ -2,7 +2,10 @@ module github.com/zenmodel/zenmodel/example
 
 go 1.21.0
 
-require github.com/zenmodel/zenmodel v0.1.0
+require (
+	github.com/sashabaranov/go-openai v1.20.3
+	github.com/zenmodel/zenmodel v0.1.0
+)
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
