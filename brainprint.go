@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/zenmodel/zenmodel/utils"
+	"github.com/zenmodel/zenmodel/internal/utils"
 )
 
 // Brainprint is short of BrainLocal Blueprint
