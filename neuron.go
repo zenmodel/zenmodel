@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/zenmodel/zenmodel/utils"
+	"github.com/zenmodel/zenmodel/internal/utils"
 )
 
 const (
