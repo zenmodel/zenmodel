@@ -6,11 +6,17 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
+	"github.com/zenmodel/zenmodel/internal/constants"
+	"github.com/zenmodel/zenmodel/internal/errors"
+	"github.com/zenmodel/zenmodel/internal/log"
+	"github.com/zenmodel/zenmodel/internal/utils"
+	"go.uber.org/zap"
 	"k8s.io/client-go/util/workqueue"
 )
 
 func NewBrainLocal(brainprint Brainprint, withOpts ...Option) *BrainLocal {
 	brain := &BrainLocal{
+		id:         utils.GenUUID(),
 		Brainprint: brainprint,
 		brainLocalOptions: brainLocalOptions{
 			rateLimiterBaseDelay: 5 * time.Millisecond,
@@ -22,17 +28,24 @@ func NewBrainLocal(brainprint Brainprint, withOpts ...Option) *BrainLocal {
 		memory: nil,
 		queue:  nil,
 		state:  BrainStateSleeping,
+		logger: log.GetLogger(),
 	}
 
-	// maintainer
+	// reset maintainer, logger
 	for _, opt := range withOpts {
 		opt.apply(brain)
 	}
+
+	brain.logger = brain.logger.With(zap.String("brain", brain.id))
+	brain.logger.Debug("new local brain created", zap.Object("brainprint", &brainprint))
 
 	return brain
 }
 
 type BrainLocal struct {
+	// ID 不可编辑
+	id string
+
 	Brainprint
 	// read only state, unable to set
 	// Brainprint is in the Running state when there are 1 or more Activate neuron
@@ -44,6 +57,8 @@ type BrainLocal struct {
 	brainLocalOptions
 	// local maintainer queue
 	queue workqueue.RateLimitingInterface
+
+	logger *zap.Logger
 }
 
 type brainLocalOptions struct {
@@ -57,7 +72,7 @@ type brainLocalOptions struct {
 func (b *BrainLocal) Entry() error {
 	// get all entry links
 	linkIDs := make([]string, 0)
-	for _, link := range b.linkMap {
+	for _, link := range b.links {
 		if link.IsEntryLink() {
 			linkIDs = append(linkIDs, link.id)
 		}
@@ -90,6 +105,7 @@ func (b *BrainLocal) SetMemory(keysAndValues ...interface{}) error {
 		k := keysAndValues[i]
 		v := keysAndValues[i+1]
 		b.memory.Set(k, v, 1) // TODO maybe calculate cost
+		b.logger.Debug("set memory", zap.Any("key", k), zap.Any("value", v))
 	}
 	b.memory.Wait()
 
@@ -117,9 +133,11 @@ func (b *BrainLocal) GetState() BrainState {
 }
 
 func (b *BrainLocal) Start() {
+	b.logger.Info("brain maintainer start", zap.Int("workerNum", b.workerNum))
+
 	// re-new queue
 	if b.queue != nil {
-		b.queue.ShutDown()
+		b.ShutDown()
 	}
 	b.queue = workqueue.NewRateLimitingQueueWithConfig(
 		workqueue.NewItemExponentialFailureRateLimiter(b.rateLimiterBaseDelay, b.rateLimiterMaxDelay),
@@ -133,16 +151,17 @@ func (b *BrainLocal) Start() {
 	}
 }
 
-func (b *BrainLocal) Shutdown() {
+func (b *BrainLocal) ShutDown() {
+	b.logger.Info("brain maintainer shutdown")
 	b.queue.ShutDown()
 }
 
-func (b *BrainLocal) SendMessage(message Message) {
+func (b *BrainLocal) SendMessage(message constants.Message) {
+	b.logger.Debug("send message", zap.Object("message", message))
 	b.queue.Add(message)
 }
 
 func (b *BrainLocal) runWorker() {
-	//m.logger.Info("run worker")
 	for b.processFromQueue() {
 	}
 }
@@ -155,34 +174,36 @@ func (b *BrainLocal) processFromQueue() bool {
 	}
 	defer b.queue.Done(msg)
 
-	message := msg.(Message)
-	fmt.Printf("maintainer process msg: %+v\n", message)
-	switch message.kind {
-	case MessageKindLink:
+	message := msg.(constants.Message)
+	logger := b.logger.With(zap.Object("message", message))
+	logger.Debug("process message")
+
+	switch message.Kind {
+	case constants.MessageKindLink:
 		// 1. link message
 		if err := b.HandleLink(message.Action, message.ID); err != nil {
-			// TODO log error
+			logger.Error("handle link message error", zap.Error(err))
 			return true
 		}
-
-	case MessageKindNeuron:
+	case constants.MessageKindNeuron:
 		// 2. neuron message
 		if err := b.HandleNeuron(message.Action, message.ID); err != nil {
-			// TODO log error
+			logger.Error("handle neuron message error", zap.Error(err))
 			return true
 		}
-	case MessageKindBrain:
+	case constants.MessageKindBrain:
 		if err := b.HandleBrain(message.Action); err != nil {
-			// TODO log error
+			logger.Error("handle brain message error", zap.Error(err))
 			return true
 		}
 	default:
-		// log unsupported message kind
+		// logger unsupported message kind
+		logger.Error("message error", zap.Error(errors.ErrUnsupportedMessageKind(message.Kind)))
 		return true
 	}
 
 	// 3. 重新计算 brain 状态并刷新
-	if message.kind != MessageKindBrain {
+	if message.Kind != constants.MessageKindBrain {
 		b.RefreshState()
 	}
 
@@ -236,9 +257,9 @@ func (b *BrainLocal) trigLink(wg *sync.WaitGroup, link *Link) {
 		link.state = LinkStateReady
 
 		// send link message
-		b.SendMessage(Message{
-			kind:   MessageKindLink,
-			Action: MessageActionLinkReady,
+		b.SendMessage(constants.Message{
+			Kind:   constants.MessageKindLink,
+			Action: constants.MessageActionLinkReady,
 			ID:     link.id,
 		})
 	}
@@ -247,27 +268,25 @@ func (b *BrainLocal) trigLink(wg *sync.WaitGroup, link *Link) {
 }
 
 func (b *BrainLocal) RefreshState() {
-	_, activateCnt := b.getNeuronCountByState()
-	_, waitCnt, readyCnt := b.getLinkCountByState()
-	// TODO debug log
-	//fmt.Printf("refresh brain state, neuronInhibit: %d, neuronActivate: %d, linkInit: %d, linkWait: %d, linkRedy: %d\n",
-	//	inhibitCnt, activateCnt, initCnt, waitCnt, readyCnt)
-	// set to running
-
+	inhibitCnt, activateCnt := b.getNeuronCountByState()
+	initCnt, waitCnt, readyCnt := b.getLinkCountByState()
+	b.logger.Debug("count link and neuron by state",
+		zap.Int("neuron_inhibit", inhibitCnt), zap.Int("neuron_activated", activateCnt),
+		zap.Int("link_init", initCnt), zap.Int("link_wait", waitCnt), zap.Int("link_ready", readyCnt))
 	// send brain sleep message
 	if activateCnt+waitCnt+readyCnt == 0 {
-		b.SendMessage(Message{
-			kind:   MessageKindBrain,
-			Action: MessageActionBrainSleep,
+		b.SendMessage(constants.Message{
+			Kind:   constants.MessageKindBrain,
+			Action: constants.MessageActionBrainSleep,
 		})
-	} else { // > 0
+	} else { // > 0, set to running
 		b.state = BrainStateRunning
 	}
 }
 
 func (b *BrainLocal) getNeuronCountByState() (int, int) {
 	var inhibitCnt, activateCnt int
-	for _, neuron := range b.neuronMap {
+	for _, neuron := range b.neurons {
 		switch neuron.state {
 		case NeuronStateInhibited:
 			inhibitCnt++
@@ -281,7 +300,7 @@ func (b *BrainLocal) getNeuronCountByState() (int, int) {
 
 func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 	var initCnt, waitCnt, readyCnt int
-	for _, link := range b.linkMap {
+	for _, link := range b.links {
 		switch link.state {
 		case LinkStateInit:
 			initCnt++
@@ -295,90 +314,93 @@ func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 	return initCnt, waitCnt, readyCnt
 }
 
-func (b *BrainLocal) HandleLink(action MessageAction, linkID string) error {
+func (b *BrainLocal) HandleLink(action constants.MessageAction, linkID string) error {
 	link := b.GetLink(linkID)
-	// TODO link nil error
+	if link == nil {
+		return errors.ErrLinkNotFound(linkID)
+	}
+
 	switch action {
-	case MessageActionLinkInit:
+	case constants.MessageActionLinkInit:
 		// do nothing
-	case MessageActionLinkWait:
+	case constants.MessageActionLinkWait:
 		// do nothing
-	case MessageActionLinkReady:
+	case constants.MessageActionLinkReady:
 		destNeuron := b.GetNeuron(link.to)
-		// TODO  neuron nil error
+		if destNeuron == nil {
+			return errors.ErrNeuronNotFound(link.to)
+		}
 		// try dest neuron activate
-		b.SendMessage(Message{
-			kind:   MessageKindNeuron,
-			Action: MessageActionNeuronTryActivate,
+		b.SendMessage(constants.Message{
+			Kind:   constants.MessageKindNeuron,
+			Action: constants.MessageActionNeuronTryActivate,
 			ID:     destNeuron.id,
 		})
 
 	default:
-		// TODO unsupported link action error
-
+		return errors.ErrUnsupportedMessageAction(action)
 	}
 
 	return nil
 }
 
-func (b *BrainLocal) HandleNeuron(action MessageAction, neuronID string) error {
+func (b *BrainLocal) HandleNeuron(action constants.MessageAction, neuronID string) error {
 	neuron := b.GetNeuron(neuronID)
-	// TODO neuron nil error
+	if neuron == nil {
+		return errors.ErrNeuronNotFound(neuronID)
+	}
 
 	switch action {
-	case MessageActionNeuronTryInhibit:
+	case constants.MessageActionNeuronTryInhibit:
 		// do nothing , neuron 只有自己 Inhibit
-	case MessageActionNeuronTryActivate:
+	case constants.MessageActionNeuronTryActivate:
 		return b.tryActivateNeuron(neuron)
 	default:
-		// TODO unsupported neuron action error
+		return errors.ErrUnsupportedMessageAction(action)
 	}
 
 	return nil
 }
 
-func (b *BrainLocal) HandleBrain(action MessageAction) error {
+func (b *BrainLocal) HandleBrain(action constants.MessageAction) error {
 	switch action {
-	case MessageActionBrainSleep:
-		b.Shutdown()
+	case constants.MessageActionBrainSleep:
+		b.ShutDown()
 		b.allLinkNeuronInhibit()
 		b.state = BrainStateSleeping
 		return nil
 	default:
-		// TODO unsupported brain action error
+		return errors.ErrUnsupportedMessageAction(action)
 	}
-
-	return nil
 }
 
 func (b *BrainLocal) allLinkNeuronInhibit() {
-	for _, link := range b.linkMap {
+	for _, link := range b.links {
 		link.state = LinkStateInit
 	}
-	for _, neuron := range b.neuronMap {
+	for _, neuron := range b.neurons {
 		neuron.state = NeuronStateInhibited
 	}
 }
 
 func (b *BrainLocal) tryActivateNeuron(neuron *Neuron) error {
 	if neuron.state == NeuronStateActivated {
-		// TODO log already activated
+		b.logger.Debug("neuron already activated", zap.String("neuron", neuron.id))
 		return nil
 	}
 
 	should := b.ifNeuronShouldActivate(neuron)
 	if !should {
-		// TODO log
+		b.logger.Debug("neuron should not be activated", zap.String("neuron", neuron.id))
 		return nil
 	}
 
 	// should END, send brain sleep message
 	if neuron.id == EndNeuronID {
-		// TODO log
-		fmt.Printf("Arrival at END neuron.\n")
-		b.SendMessage(Message{
-			kind:   MessageKindBrain,
-			Action: MessageActionBrainSleep,
+		b.logger.Info("arrival at END neuron")
+		b.SendMessage(constants.Message{
+			Kind:   constants.MessageKindBrain,
+			Action: constants.MessageActionBrainSleep,
 		})
 		return nil
 	}
@@ -446,9 +468,9 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 		link := b.GetLink(linkID)
 		if link.state == LinkStateWait {
 			link.state = LinkStateReady
-			b.SendMessage(Message{
-				kind:   MessageKindLink,
-				Action: MessageActionLinkReady,
+			b.SendMessage(constants.Message{
+				Kind:   constants.MessageKindLink,
+				Action: constants.MessageActionLinkReady,
 				ID:     link.id,
 			})
 		}

@@ -1,9 +1,8 @@
 package zenmodel
 
 import (
-	"fmt"
-
 	"github.com/zenmodel/zenmodel/internal/utils"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -82,11 +81,11 @@ func (l *Link) IsEntryLink() bool {
 	return false
 }
 
-func (l *Link) String() string {
-	return fmt.Sprintf(`{
-	"id": "%s",
-	"state": "%s",
-	"src": "%s",
-	"dest": "%s"
-}`, l.id, l.state, l.from, l.to)
+func (l *Link) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("id", l.id)
+	enc.AddString("state", string(l.state))
+	enc.AddString("src", l.from)
+	enc.AddString("dest", l.to)
+
+	return nil
 }

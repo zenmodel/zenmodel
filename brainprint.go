@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/zenmodel/zenmodel/internal/utils"
+	"github.com/zenmodel/zenmodel/internal/errors"
+	"go.uber.org/zap/zapcore"
 )
 
 // Brainprint is short of BrainLocal Blueprint
 type Brainprint struct {
-	// map of all neurons
-	neuronMap map[string]*Neuron
-	// map of all neuron links
-	linkMap map[string]*Link
+	// map of all neuron
+	neurons map[string]*Neuron
+	// map of all link
+	links map[string]*Link
 	// timeout for the brain, default is no timeout
 	// if set, the brain will sleep after the timeout
 	timeout *time.Duration
@@ -23,8 +23,8 @@ type BrainState string
 
 func NewBrainPrint() *Brainprint {
 	return &Brainprint{
-		neuronMap: make(map[string]*Neuron),
-		linkMap:   make(map[string]*Link),
+		neurons: make(map[string]*Neuron),
+		links:   make(map[string]*Link),
 	}
 }
 
@@ -33,18 +33,18 @@ func (b *Brainprint) DeepCopy() *Brainprint {
 		return nil
 	}
 	cp := &Brainprint{
-		neuronMap: make(map[string]*Neuron),
-		linkMap:   make(map[string]*Link),
+		neurons: make(map[string]*Neuron),
+		links:   make(map[string]*Link),
 	}
 	if b.timeout != nil {
 		timeout := *b.timeout
 		cp.timeout = &timeout
 	}
-	for id, neuron := range b.neuronMap {
-		cp.neuronMap[id] = neuron.DeepCopy()
+	for id, neuron := range b.neurons {
+		cp.neurons[id] = neuron.DeepCopy()
 	}
-	for id, link := range b.linkMap {
-		cp.linkMap[id] = link.DeepCopy()
+	for id, link := range b.links {
+		cp.links[id] = link.DeepCopy()
 	}
 	return cp
 }
@@ -52,19 +52,19 @@ func (b *Brainprint) DeepCopy() *Brainprint {
 func (b *Brainprint) AddNeuron(processFn func(Brain) error) string {
 	neuron := newNeuron()
 	neuron.bindProcessor(&DefaultProcessor{processFn: processFn})
-	b.neuronMap[neuron.id] = neuron
+	b.neurons[neuron.id] = neuron
 	return neuron.id
 }
 
 func (b *Brainprint) AddNeuronWithProcessor(p Processor) string {
 	neuron := newNeuron()
 	neuron.bindProcessor(p)
-	b.neuronMap[neuron.id] = neuron
+	b.neurons[neuron.id] = neuron
 	return neuron.id
 }
 
 func (b *Brainprint) GetNeuron(id string) *Neuron {
-	return b.neuronMap[id]
+	return b.neurons[id]
 }
 
 func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
@@ -77,11 +77,11 @@ func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
 	}
 	from := b.GetNeuron(fromID)
 	if from == nil {
-		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", fromID)
+		return "", errors.ErrNeuronNotFound(fromID)
 	}
 	to := b.GetNeuron(toID)
 	if to == nil {
-		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", toID)
+		return "", errors.ErrNeuronNotFound(toID)
 	}
 
 	link := newLink(from, to)
@@ -98,19 +98,19 @@ func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
 		// error
 		return "", errors.Wrapf(err, "add link to default cast group error")
 	}
-	b.linkMap[link.id] = link
+	b.links[link.id] = link
 
 	return link.id, nil
 }
 
 func (b *Brainprint) GetLink(id string) *Link {
-	return b.linkMap[id]
+	return b.links[id]
 }
 
 func (b *Brainprint) AddEntryLink(toID string) (string, error) {
 	to := b.GetNeuron(toID)
 	if to == nil {
-		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", toID)
+		return "", errors.ErrNeuronNotFound(toID)
 	}
 
 	link := newEntryLink(to)
@@ -122,7 +122,7 @@ func (b *Brainprint) AddEntryLink(toID string) (string, error) {
 		return "", errors.Wrapf(err, "add trigger group with link error")
 	}
 
-	b.linkMap[link.id] = link
+	b.links[link.id] = link
 
 	return link.id, nil
 }
@@ -133,7 +133,7 @@ func (b *Brainprint) AddEndLink(fromID string) (string, error) {
 	end := b.GetNeuron(EndNeuronID)
 	from := b.GetNeuron(fromID)
 	if from == nil {
-		return "", errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", fromID)
+		return "", errors.ErrNeuronNotFound(fromID)
 	}
 
 	link := newLink(from, end)
@@ -151,7 +151,7 @@ func (b *Brainprint) AddEndLink(fromID string) (string, error) {
 		return "", errors.Wrapf(err, "add link to default cast group error")
 	}
 
-	b.linkMap[link.id] = link
+	b.links[link.id] = link
 
 	return link.id, nil
 }
@@ -162,14 +162,14 @@ func (b *Brainprint) AddEndLink(fromID string) (string, error) {
 func (b *Brainprint) AddLinkToCastGroup(neuronID string, groupName string, linkIDs ...string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
-		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
+		return errors.ErrNeuronNotFound(neuronID)
 	}
 
 	links := make([]*Link, 0)
 	for _, id := range linkIDs {
 		link := b.GetLink(id)
 		if link == nil {
-			return errors.Wrapf(ErrorLinkNotFound, "link ID %s", id)
+			return errors.ErrLinkNotFound(id)
 		}
 		links = append(links, link)
 	}
@@ -181,7 +181,7 @@ func (b *Brainprint) AddLinkToCastGroup(neuronID string, groupName string, linkI
 func (b *Brainprint) DeleteCastGroup(neuronID string, groupName string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
-		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
+		return errors.ErrNeuronNotFound(neuronID)
 	}
 
 	return neu.deleteCastGroup(groupName)
@@ -191,14 +191,14 @@ func (b *Brainprint) DeleteCastGroup(neuronID string, groupName string) error {
 func (b *Brainprint) AddTriggerGroup(neuronID string, linkIDs ...string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
-		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
+		return errors.ErrNeuronNotFound(neuronID)
 	}
 
 	links := make([]*Link, 0)
 	for _, id := range linkIDs {
 		link := b.GetLink(id)
 		if link == nil {
-			return errors.Wrapf(ErrorLinkNotFound, "link ID %s", id)
+			return errors.ErrLinkNotFound(id)
 		}
 		links = append(links, link)
 	}
@@ -210,14 +210,14 @@ func (b *Brainprint) AddTriggerGroup(neuronID string, linkIDs ...string) error {
 func (b *Brainprint) DeleteTriggerGroup(neuronID string, linkIDs ...string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
-		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
+		return errors.ErrNeuronNotFound(neuronID)
 	}
 
 	links := make([]*Link, 0)
 	for _, id := range linkIDs {
 		link := b.GetLink(id)
 		if link == nil {
-			return errors.Wrapf(ErrorLinkNotFound, "link ID %s", id)
+			return errors.ErrLinkNotFound(id)
 		}
 		links = append(links, link)
 	}
@@ -230,7 +230,6 @@ func (b *Brainprint) DeleteTriggerGroup(neuronID string, linkIDs ...string) erro
 // Build will build BrainLocal
 func (b *Brainprint) Build(withOpts ...Option) Brain {
 	bpcp := b.DeepCopy()
-	fmt.Printf("brainprint copy: %s\n", bpcp)
 	brain := NewBrainLocal(*bpcp, withOpts...)
 
 	return brain
@@ -240,7 +239,7 @@ func (b *Brainprint) Build(withOpts ...Option) Brain {
 func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brain Brain) string) error {
 	neu := b.GetNeuron(neuronID)
 	if neu == nil {
-		return errors.Wrapf(ErrorNeuronNotFound, "neuron ID %s", neuronID)
+		return errors.ErrNeuronNotFound(neuronID)
 	}
 
 	neu.selectFn = selectFn
@@ -249,7 +248,7 @@ func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brai
 }
 
 func (b *Brainprint) HasEndNeuron() bool {
-	for nid, _ := range b.neuronMap {
+	for nid, _ := range b.neurons {
 		if nid == EndNeuronID {
 			return true
 		}
@@ -263,17 +262,39 @@ func (b *Brainprint) ensureEndNeuron() {
 		return
 	}
 	neuron := newEndNeuron()
-	b.neuronMap[neuron.id] = neuron
+	b.neurons[neuron.id] = neuron
 }
 
-func (b *Brainprint) String() string {
-	neuronMapString := utils.PrintMap(b.neuronMap)
-	linkMapString := utils.PrintMap(b.linkMap)
+func (b *Brainprint) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	err := enc.AddArray("neurons", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
+		for _, neuron := range b.neurons {
+			if err := ae.AppendObject(neuron); err != nil {
+				return err
+			}
+		}
 
-	return fmt.Sprintf(`{
-		"neuron_map": %s,
-		"link_map": %s,
-		"timeout": "%s"
-	}`, neuronMapString, linkMapString, b.timeout)
+		return nil
+	}))
+	if err != nil {
+		return err
+	}
 
+	err = enc.AddArray("links", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
+		for _, link := range b.links {
+			if err := ae.AppendObject(link); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}))
+	if err != nil {
+		return err
+	}
+
+	if b.timeout != nil {
+		enc.AddDuration("timeout", *b.timeout)
+	}
+
+	return nil
 }
