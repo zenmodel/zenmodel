@@ -9,14 +9,14 @@ import (
 
 func main() {
 	bp := zenmodel.NewBrainPrint()
-	n1 := bp.AddNeuron(fn1)
-	n2 := bp.AddNeuron(fn2)
-	_, err := bp.AddLink(n1, n2)
+	bp.AddNeuron("n1", fn1)
+	bp.AddNeuron("n2", fn2)
+	_, err := bp.AddLink("n1", "n2")
 	if err != nil {
 		fmt.Printf("add link error: %s\n", err)
 		return
 	}
-	_, err = bp.AddEntryLink(n1)
+	_, err = bp.AddEntryLink("n1")
 	if err != nil {
 		fmt.Printf("add entry link error: %s\n", err)
 		return

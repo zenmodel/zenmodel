@@ -19,9 +19,9 @@ var (
 	}
 )
 
-func newNeuron() *Neuron {
+func newNeuron(id string) *Neuron {
 	return &Neuron{
-		id:    utils.GenUUID(),
+		id:    id,
 		state: NeuronStateInhibited,
 		castGroups: map[string]CastGroup{
 			DefaultCastGroupName: map[string]bool{},

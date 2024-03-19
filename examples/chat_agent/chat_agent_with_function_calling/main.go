@@ -15,22 +15,29 @@ import (
 func main() {
 	bp := zenmodel.NewBrainPrint()
 	// add neuron
-	llm := bp.AddNeuron(chatLLM)
-	action := bp.AddNeuron(callTools)
+	bp.AddNeuron("llm", chatLLM)
+	bp.AddNeuron("action", callTools)
+
+	/* This example omits error handling */
+	// add entry link
+	_, _ = bp.AddEntryLink("llm")
 
 	// add link
-	_, _ = bp.AddEntryLink(llm)
-	continueLink, _ := bp.AddLink(llm, action)
-	_, _ = bp.AddLink(action, llm)
+	continueLink, _ := bp.AddLink("llm", "action")
+	_, _ = bp.AddLink("action", "llm")
 
-	endLink, _ := bp.AddEndLink(llm)
+	// add end link
+	endLink, _ := bp.AddEndLink("llm")
 
-	// set cast selection
-	_ = bp.AddLinkToCastGroup(llm, "continue", continueLink)
-	_ = bp.AddLinkToCastGroup(llm, "end", endLink)
-	_ = bp.BindCastGroupSelectFunc(llm, llmNext)
+	// add link to cast group of a neuron
+	_ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
+	_ = bp.AddLinkToCastGroup("llm", "end", endLink)
+	// bind cast group select function for neuron
+	_ = bp.BindCastGroupSelectFunc("llm", llmNext)
 
+	// build brain
 	brain := bp.Build()
+	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: "What is the weather in Boston today?"}})
 

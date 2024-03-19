@@ -49,18 +49,33 @@ func (b *Brainprint) DeepCopy() *Brainprint {
 	return cp
 }
 
-func (b *Brainprint) AddNeuron(processFn func(Brain) error) string {
-	neuron := newNeuron()
-	neuron.bindProcessor(&DefaultProcessor{processFn: processFn})
-	b.neurons[neuron.id] = neuron
-	return neuron.id
+// AddNeuron add a neuron with process function to the brain,
+// if neuron already exist in brain, process function will be overwritten
+func (b *Brainprint) AddNeuron(neuronID string, processFn func(Brain) error) {
+	b.addNeuronWithProcessor(neuronID, &DefaultProcessor{processFn: processFn})
+
+	return
 }
 
-func (b *Brainprint) AddNeuronWithProcessor(p Processor) string {
-	neuron := newNeuron()
-	neuron.bindProcessor(p)
+// AddNeuronWithProcessor add a neuron with processor to the brain,
+// if neuron already exist in brain, processor will be overwritten
+func (b *Brainprint) AddNeuronWithProcessor(neuronID string, processor Processor) {
+	b.addNeuronWithProcessor(neuronID, processor)
+
+	return
+}
+
+// addNeuronWithProcessor add a neuron with processor to the brain,
+// if neuron already exist in brain, processor will be overwritten
+func (b *Brainprint) addNeuronWithProcessor(neuronID string, processor Processor) {
+	neuron := b.GetNeuron(neuronID)
+	if neuron == nil {
+		neuron = newNeuron(neuronID)
+	}
+	neuron.bindProcessor(processor)
 	b.neurons[neuron.id] = neuron
-	return neuron.id
+
+	return
 }
 
 func (b *Brainprint) GetNeuron(id string) *Neuron {
@@ -247,14 +262,13 @@ func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brai
 	return nil
 }
 
-func (b *Brainprint) HasEndNeuron() bool {
-	for nid, _ := range b.neurons {
-		if nid == EndNeuronID {
-			return true
-		}
-	}
+func (b *Brainprint) HasNeuron(neuronID string) bool {
+	_, found := b.neurons[neuronID]
+	return found
+}
 
-	return false
+func (b *Brainprint) HasEndNeuron() bool {
+	return b.HasNeuron(EndNeuronID)
 }
 
 func (b *Brainprint) ensureEndNeuron() {

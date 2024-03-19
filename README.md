@@ -39,8 +39,8 @@ bp := zenmodel.NewBrainPrint()
 
 ```go
 // add neuron with function
-llm := bp.AddNeuron(chatLLM)
-action := bp.AddNeuron(callTools)
+bp.AddNeuron("llm", chatLLM)
+bp.AddNeuron("action", callTools)
 ```
 
 #### 2. 添加连接 `Link`
@@ -52,16 +52,15 @@ action := bp.AddNeuron(callTools)
 
 ```go
 /* This example omits error handling */
-
 // add entry link
-_, _ = bp.AddEntryLink(llm)
+_, _ = bp.AddEntryLink("llm")
 
 // add link
-continueLink, _ := bp.AddLink(llm, action)
-_, _ = bp.AddLink(action, llm)
+continueLink, _ := bp.AddLink("llm", "action")
+_, _ = bp.AddLink("action", "llm")
 
 // add end link
-endLink, _ := bp.AddEndLink(llm)
+endLink, _ := bp.AddEndLink("llm")
 ```
 
 #### 3. 设置分支处的传播选择
@@ -69,12 +68,11 @@ endLink, _ := bp.AddEndLink(llm)
 默认情况下 `Neuron` 的出向连接全都会进行传播（属于默认传播组），如果要设置分支选择，希望只有某些连接会进行传播，那就需要设置传播组（CastGroup）和传播选择函数（CastGroupSelectFunc）。每个传播组包含一组连接，传播选择函数的返回字符串决定传播到哪个传播组。
 
 ```go
-// add link to cast group of a neuron
-_ = bp.AddLinkToCastGroup(llm, "continue", continueLink)
-_ = bp.AddLinkToCastGroup(llm, "end", endLink)
-
+	// add link to cast group of a neuron
+_ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
+_ = bp.AddLinkToCastGroup("llm", "end", endLink)
 // bind cast group select function for neuron
-_ = bp.BindCastGroupSelectFunc(llm, llmNext)
+_ = bp.BindCastGroupSelectFunc("llm", llmNext)
 ```
 
 ```go
@@ -94,7 +92,7 @@ func llmNext(b zenmodel.Brain) string {
 ```
 
 ### 从蓝图构建 `Brain`
-
+构建时可以携带各种 withOpts 参数，当然也可以像示例中一样不配置，使用默认构建参数。
 ```go
 brain := bp.Build()
 ```

@@ -9,7 +9,7 @@ import (
 )
 
 var once sync.Once
-var logger = build()
+var logger = build(zap.InfoLevel)
 
 // SetLogger set global logger
 func SetLogger(l *zap.Logger) {
@@ -22,8 +22,11 @@ func GetLogger() *zap.Logger {
 	return logger
 }
 
-func build() *zap.Logger {
-	level := zap.InfoLevel
+func NewDefaultLoggerWithLevel(level zapcore.Level) *zap.Logger {
+	return build(level)
+}
+
+func build(level zapcore.Level) *zap.Logger {
 	lv, err := zapcore.ParseLevel(os.Getenv("LOG_LEVEL"))
 	if err == nil {
 		level = lv
