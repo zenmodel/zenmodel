@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel/internal/utils"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -197,6 +198,18 @@ func (n *Neuron) deleteCastGroup(groupName string) error {
 	return nil
 }
 
+func (cg CastGroup) array() []string {
+	if cg == nil {
+		return nil
+	}
+	ret := make([]string, 0, len(cg))
+	for s, _ := range cg {
+		ret = append(ret, s)
+	}
+
+	return ret
+}
+
 func (cgs CastGroups) containsLink(linkID string) bool {
 	for _, group := range cgs {
 		for curLinkID, _ := range group {
@@ -261,15 +274,33 @@ func (n *Neuron) bindProcessor(p Processor) {
 	n.processor = p
 }
 
-func (n *Neuron) String() string {
-	ts, _ := json.Marshal(n.triggerGroups)
-	cs, _ := json.Marshal(n.castGroups)
-	ls, _ := json.Marshal(n.labels)
-	return fmt.Sprintf(`{
-	"id": "%s",
-	"state": "%s",
-	"trigger_groups": %s,
-	"cast_groups": %s,
-	"labels": %s
-}`, n.id, n.state, ts, cs, ls)
+func (n *Neuron) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("id", n.id)
+	enc.AddString("state", string(n.state))
+	err := enc.AddArray("trigger_groups", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
+		for _, group := range n.triggerGroups {
+			ae.AppendString(fmt.Sprintf("%s", group))
+		}
+		return nil
+	}))
+	if err != nil {
+		return err
+	}
+
+	err = enc.AddArray("cast_groups", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
+		for _, cg := range n.castGroups {
+			ae.AppendString(fmt.Sprintf("%s", cg.array()))
+		}
+		return nil
+	}))
+	if err != nil {
+		return err
+	}
+
+	if len(n.labels) != 0 {
+		ls, _ := json.Marshal(n.labels)
+		enc.AddByteString("labels", ls)
+	}
+
+	return nil
 }
