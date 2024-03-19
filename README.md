@@ -35,7 +35,7 @@ bp := zenmodel.NewBrainPrint()
 
 #### 2. 添加神经元 `Neuron`
 
-可以为 neuron 绑定的处理函数，或自定义 `Processor`，此示例为绑定函数，函数的定义省略，详见 [examples/chat_agent_with_function_calling](./examples/chat_agent_with_function_calling/main.go)。
+可以为 neuron 绑定的处理函数，或自定义 `Processor`，此示例为绑定函数，函数的定义省略，详见 [examples/chat_agent_with_function_calling](examples/chat_agent/chat_agent_with_function_calling/main.go)。
 
 ```go
 // add neuron with function
