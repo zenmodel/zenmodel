@@ -31,7 +31,7 @@ func NewBrainLocal(brainprint Brainprint, withOpts ...Option) *BrainLocal {
 		logger: log.GetLogger(),
 	}
 
-	// reset maintainer, logger
+	// reset maintainer, logger, ID, etc.
 	for _, opt := range withOpts {
 		opt.apply(brain)
 	}
