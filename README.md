@@ -68,7 +68,7 @@ endLink, _ := bp.AddEndLink("llm")
 默认情况下 `Neuron` 的出向连接全都会进行传播（属于默认传播组），如果要设置分支选择，希望只有某些连接会进行传播，那就需要设置传播组（CastGroup）和传播选择函数（CastGroupSelectFunc）。每个传播组包含一组连接，传播选择函数的返回字符串决定传播到哪个传播组。
 
 ```go
-	// add link to cast group of a neuron
+// add link to cast group of a neuron
 _ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
 _ = bp.AddLinkToCastGroup("llm", "end", endLink)
 // bind cast group select function for neuron
