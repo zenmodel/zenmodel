@@ -68,7 +68,7 @@ endLink, _ := bp.AddEndLink("llm")
 默认情况下 `Neuron` 的出向连接全都会进行传播（属于默认传播组），如果要设置分支选择，希望只有某些连接会进行传播，那就需要设置传播组（CastGroup）和传播选择函数（CastGroupSelectFunc）。每个传播组包含一组连接，传播选择函数的返回字符串决定传播到哪个传播组。
 
 ```go
-	// add link to cast group of a neuron
+// add link to cast group of a neuron
 _ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
 _ = bp.AddLinkToCastGroup("llm", "end", endLink)
 // bind cast group select function for neuron
@@ -130,3 +130,18 @@ if found {
     fmt.Printf("messages: %s\n", messages)
 }
 ```
+
+## 其他示例
+
+### ChatAgent：带 `function calling`
+
+ChatAgent 将聊天消息列表作为输入，并输出新消息到消息列表。示例中使用了 OpenAI 的 `function calling` 能力。  
+建议配合支持 function calling 的模型来使用。  
+
+- [Getting Start](./examples/chat_agent/chat_agent_with_function_calling/main.go): 从头开始创建 聊天 agent.
+
+
+### Reflection / Self-Critique
+当输出质量是一个主要问题时，通常会结合一些自我批判或反思和外部验证来优化系统的输出。以下示例演示了实现此类设计的研究。
+
+- [Basic Reflection](./examples/reflection/main.go): 在 `Brain` 中添加一个简单的 "reflect" 步骤来提示您的系统修改其输出。
