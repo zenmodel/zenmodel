@@ -117,12 +117,10 @@ _ = brain.EntryWithMemory("messages", []openai.ChatCompletionMessage{{Role: open
 
 ### 从 `Memory` 中获取结果
 
-`Brain` 的运行是异步的，我们获取运行结果的时机也是是没有限制的，通常我们可以等待 `Brain` 状态变为 `Sleeping` 或者是某个 `Memory` 达到预期值之后去获取结果。结果是从 `Memory` 中获取的。
+`Brain` 的运行是异步的，我们获取运行结果的时机也是是没有限制的，通常我们可以调用 `Wait()`, 来等待 `Brain` 状态变为 `Sleeping` 或者是某个 `Memory` 达到预期值之后去获取结果。结果是从 `Memory` 中获取的。
 ```go
 // block process util brain sleeping
-for brain.GetState() != zenmodel.BrainStateSleeping {
-    time.Sleep(1 * time.Second)
-}
+brain.Wait()
 
 v, found := brain.GetMemory("messages")
 if found {

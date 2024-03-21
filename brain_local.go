@@ -57,6 +57,7 @@ type BrainLocal struct {
 	brainLocalOptions
 	// local maintainer queue
 	queue workqueue.RateLimitingInterface
+	wg    sync.WaitGroup
 
 	logger *zap.Logger
 }
@@ -132,6 +133,10 @@ func (b *BrainLocal) GetState() BrainState {
 	return b.state
 }
 
+func (b *BrainLocal) Wait() {
+	b.wg.Wait()
+}
+
 func (b *BrainLocal) Start() {
 	b.logger.Info("brain maintainer start", zap.Int("workerNum", b.workerNum))
 
@@ -147,6 +152,7 @@ func (b *BrainLocal) Start() {
 
 	// start worker, will terminate goroutine when queue shutdown
 	for i := 0; i < b.workerNum; i++ {
+		b.wg.Add(1)
 		go b.runWorker()
 	}
 }
@@ -162,6 +168,8 @@ func (b *BrainLocal) SendMessage(message constants.Message) {
 }
 
 func (b *BrainLocal) runWorker() {
+	defer b.wg.Done()
+
 	for b.processFromQueue() {
 	}
 }
