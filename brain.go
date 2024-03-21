@@ -20,6 +20,8 @@ type Brain interface {
 	DeleteMemory(key interface{})
 	// GetState get brain state
 	GetState() BrainState
+	// Wait wait util brain maintainer shutdown, which means brain state is `Sleeping`
+	Wait()
 
 	// SetMemoryStream()
 	// WatchMemoryStream()

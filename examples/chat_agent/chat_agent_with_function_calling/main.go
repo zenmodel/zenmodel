@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -42,9 +41,7 @@ func main() {
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: "What is the weather in Boston today?"}})
 
 	// block process util brain sleeping
-	for brain.GetState() != zenmodel.BrainStateSleeping {
-		time.Sleep(1 * time.Second)
-	}
+	brain.Wait()
 
 	v, found := brain.GetMemory("messages")
 	if found {

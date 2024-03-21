@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/zenmodel/zenmodel"
@@ -46,9 +45,7 @@ func main() {
 		})
 
 	// block process util brain sleeping
-	for brain.GetState() != zenmodel.BrainStateSleeping {
-		time.Sleep(1 * time.Second)
-	}
+	brain.Wait()
 
 	v, found := brain.GetMemory("messages")
 	if found {
