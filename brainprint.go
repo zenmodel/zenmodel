@@ -55,28 +55,31 @@ func (b *Brainprint) deepCopy() *Brainprint {
 
 // AddNeuron add a neuron with process function to the brain,
 // if neuron already exist in brain, process function will be overwritten
-func (b *Brainprint) AddNeuron(neuronID string, processFn func(Brain) error) {
-	b.addNeuronWithProcessor(neuronID, &DefaultProcessor{processFn: processFn})
+func (b *Brainprint) AddNeuron(neuronID string, processFn func(Brain) error, withOpts ...NeuronOption) {
+	b.addNeuronWithProcessor(neuronID, &DefaultProcessor{processFn: processFn}, withOpts...)
 
 	return
 }
 
 // AddNeuronWithProcessor add a neuron with processor to the brain,
 // if neuron already exist in brain, processor will be overwritten
-func (b *Brainprint) AddNeuronWithProcessor(neuronID string, processor Processor) {
-	b.addNeuronWithProcessor(neuronID, processor)
+func (b *Brainprint) AddNeuronWithProcessor(neuronID string, processor Processor, withOpts ...NeuronOption) {
+	b.addNeuronWithProcessor(neuronID, processor, withOpts...)
 
 	return
 }
 
 // addNeuronWithProcessor add a neuron with processor to the brain,
 // if neuron already exist in brain, processor will be overwritten
-func (b *Brainprint) addNeuronWithProcessor(neuronID string, processor Processor) {
+func (b *Brainprint) addNeuronWithProcessor(neuronID string, processor Processor, withOpts ...NeuronOption) {
 	neuron := b.getNeuron(neuronID)
 	if neuron == nil {
 		neuron = newNeuron(neuronID)
 	}
 	neuron.bindProcessor(processor)
+	for _, opt := range withOpts {
+		opt.apply(neuron)
+	}
 	b.neurons[neuron.id] = neuron
 
 	return
