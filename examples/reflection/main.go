@@ -54,7 +54,7 @@ func main() {
 	}
 }
 
-func generate(b zenmodel.Brain) error {
+func generate(b zenmodel.BrainRuntime) error {
 	fmt.Println("generation assistant running...")
 
 	// get messages form memory
@@ -92,7 +92,7 @@ func generate(b zenmodel.Brain) error {
 	return nil
 }
 
-func reflect(b zenmodel.Brain) error {
+func reflect(b zenmodel.BrainRuntime) error {
 	fmt.Println("reflection assistant running...")
 
 	// get messages form memory
@@ -145,7 +145,7 @@ Provide detailed recommendations, including requests for length, depth, style, e
 	return nil
 }
 
-func generationNext(b zenmodel.Brain) string {
+func generationNext(b zenmodel.BrainRuntime) string {
 	v, found := b.GetMemory("messages")
 	if !found {
 		return "end"

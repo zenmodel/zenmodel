@@ -75,7 +75,7 @@ var tools = []openai.Tool{
 	},
 }
 
-func chatLLM(b zenmodel.Brain) error {
+func chatLLM(b zenmodel.BrainRuntime) error {
 	fmt.Println("run here chatLLM...")
 
 	// get need info form memory
@@ -107,7 +107,7 @@ func chatLLM(b zenmodel.Brain) error {
 	return nil
 }
 
-func callTools(b zenmodel.Brain) error {
+func callTools(b zenmodel.BrainRuntime) error {
 	fmt.Println("run here callTools...")
 
 	// get need info form memory
@@ -138,7 +138,7 @@ func callTools(b zenmodel.Brain) error {
 	return nil
 }
 
-func llmNext(b zenmodel.Brain) string {
+func llmNext(b zenmodel.BrainRuntime) string {
 	v, found := b.GetMemory("messages")
 	if !found {
 		return "end"

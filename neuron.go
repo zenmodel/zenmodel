@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	defaultSelectFn = func(brain Brain) string {
+	defaultSelectFn = func(brain BrainRuntime) string {
 		return DefaultCastGroupName
 	}
 )
@@ -61,7 +61,7 @@ type Neuron struct {
 	// 传导组,传导组是用来控制神经元之间的传导关系
 	castGroups CastGroups
 	// 在 neuron 运行成功之后通过 selectFn 决定传导到哪一个传导组
-	selectFn func(brain Brain) string
+	selectFn func(brain BrainRuntime) string
 
 	// 便于二次开发的扩展
 	labels map[string]string

@@ -55,7 +55,7 @@ func (b *Brainprint) deepCopy() *Brainprint {
 
 // AddNeuron add a neuron with process function to the brain,
 // if neuron already exist in brain, process function will be overwritten
-func (b *Brainprint) AddNeuron(neuronID string, processFn func(Brain) error, withOpts ...NeuronOption) {
+func (b *Brainprint) AddNeuron(neuronID string, processFn func(runtime BrainRuntime) error, withOpts ...NeuronOption) {
 	b.addNeuronWithProcessor(neuronID, &DefaultProcessor{processFn: processFn}, withOpts...)
 
 	return
@@ -258,7 +258,7 @@ func (b *Brainprint) Build(withOpts ...Option) Brain {
 }
 
 // BindCastGroupSelectFunc bind custom select function of cast group, default select default cast group.
-func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brain Brain) string) error {
+func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brain BrainRuntime) string) error {
 	neu := b.getNeuron(neuronID)
 	if neu == nil {
 		return errors.ErrNeuronNotFound(neuronID)

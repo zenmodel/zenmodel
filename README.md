@@ -76,7 +76,7 @@ _ = bp.BindCastGroupSelectFunc("llm", llmNext)
 ```
 
 ```go
-func llmNext(b zenmodel.Brain) string {
+func llmNext(b zenmodel.BrainRuntime) string {
 	v, found := b.GetMemory("messages")
 	if !found {
 		return "end"
