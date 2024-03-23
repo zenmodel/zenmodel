@@ -86,7 +86,11 @@ const (
 	NeuronStateActivated NeuronState = "Activated"
 )
 
-func (n *Neuron) DeepCopy() *Neuron {
+func (n *Neuron) Clone() *Neuron {
+	return n.deepCopy()
+}
+
+func (n *Neuron) deepCopy() *Neuron {
 	if n == nil {
 		return nil
 	}

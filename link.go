@@ -56,7 +56,11 @@ func newEntryLink(to *Neuron) *Link {
 	}
 }
 
-func (l *Link) DeepCopy() *Link {
+func (l *Link) Clone() *Link {
+	return l.deepCopy()
+}
+
+func (l *Link) deepCopy() *Link {
 	if l == nil {
 		return nil
 	}

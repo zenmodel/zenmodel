@@ -28,7 +28,11 @@ func NewBrainPrint() *Brainprint {
 	}
 }
 
-func (b *Brainprint) DeepCopy() *Brainprint {
+func (b *Brainprint) Clone() *Brainprint {
+	return b.deepCopy()
+}
+
+func (b *Brainprint) deepCopy() *Brainprint {
 	if b == nil {
 		return nil
 	}
@@ -41,10 +45,10 @@ func (b *Brainprint) DeepCopy() *Brainprint {
 		cp.timeout = &timeout
 	}
 	for id, neuron := range b.neurons {
-		cp.neurons[id] = neuron.DeepCopy()
+		cp.neurons[id] = neuron.deepCopy()
 	}
 	for id, link := range b.links {
-		cp.links[id] = link.DeepCopy()
+		cp.links[id] = link.deepCopy()
 	}
 	return cp
 }
@@ -244,7 +248,7 @@ func (b *Brainprint) DeleteTriggerGroup(neuronID string, linkIDs ...string) erro
 
 // Build will build BrainLocal
 func (b *Brainprint) Build(withOpts ...Option) Brain {
-	bpcp := b.DeepCopy()
+	bpcp := b.deepCopy()
 	brain := NewBrainLocal(*bpcp, withOpts...)
 
 	return brain
