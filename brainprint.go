@@ -266,17 +266,45 @@ func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brai
 	return nil
 }
 
+func (b *Brainprint) HasLink(linkID string) bool {
+	return b.hasLink(linkID)
+}
+
+func (b *Brainprint) HasEntryLink() bool {
+	for _, link := range b.links {
+		if link.IsEntryLink() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (b *Brainprint) HasEndLink() bool {
+	// if we have End Neuron, have End link
+	return b.hasNeuron(EndNeuronID)
+}
+
+func (b *Brainprint) hasLink(linkID string) bool {
+	_, found := b.links[linkID]
+	return found
+}
+
 func (b *Brainprint) HasNeuron(neuronID string) bool {
+	return b.hasNeuron(neuronID)
+}
+
+func (b *Brainprint) HasEndNeuron() bool {
+	return b.hasNeuron(EndNeuronID)
+}
+
+func (b *Brainprint) hasNeuron(neuronID string) bool {
 	_, found := b.neurons[neuronID]
 	return found
 }
 
-func (b *Brainprint) HasEndNeuron() bool {
-	return b.HasNeuron(EndNeuronID)
-}
-
 func (b *Brainprint) ensureEndNeuron() {
-	if b.HasEndNeuron() {
+	if b.hasNeuron(EndNeuronID) {
 		return
 	}
 	neuron := newEndNeuron()
