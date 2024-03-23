@@ -22,7 +22,4 @@ type Brain interface {
 	GetState() BrainState
 	// Wait wait util brain maintainer shutdown, which means brain state is `Sleeping`
 	Wait()
-
-	// SetMemoryStream()
-	// WatchMemoryStream()
 }

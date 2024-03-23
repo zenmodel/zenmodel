@@ -6,6 +6,8 @@ import (
 )
 
 var (
+	ErrTryProcessLater = errors.New("try process message later")
+
 	errNeuronNotFound           = errors.New("neuron not found")
 	errLinkNotFound             = errors.New("link not found")
 	errUnsupportedMessageKind   = errors.New("unsupported message kind")
@@ -30,4 +32,8 @@ func ErrUnsupportedMessageKind(messageKind constants.MessageKind) error {
 
 func ErrUnsupportedMessageAction(messageAction constants.MessageAction) error {
 	return errors.Wrapf(errUnsupportedMessageAction, "action: %s", messageAction)
+}
+
+func ErrorIsTryProcessLater(err error) bool {
+	return errors.Is(err, ErrTryProcessLater)
 }

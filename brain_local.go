@@ -51,7 +51,7 @@ type BrainLocal struct {
 	// Brainprint is in the Running state when there are 1 or more Activate neuron
 	// or 1 or more StandBy Edge.
 	state BrainState
-	// brain memory
+	// brain memories
 	memory *ristretto.Cache
 
 	brainLocalOptions
@@ -197,6 +197,9 @@ func (b *BrainLocal) processFromQueue() bool {
 		// 2. neuron message
 		if err := b.HandleNeuron(message.Action, message.ID); err != nil {
 			logger.Error("handle neuron message error", zap.Error(err))
+			if errors.ErrorIsTryProcessLater(err) {
+				b.queue.AddAfter(msg, 500*time.Millisecond)
+			}
 			return true
 		}
 	case constants.MessageKindBrain:
@@ -363,6 +366,10 @@ func (b *BrainLocal) HandleNeuron(action constants.MessageAction, neuronID strin
 		// do nothing , neuron 只有自己 Inhibit
 	case constants.MessageActionNeuronTryActivate:
 		return b.tryActivateNeuron(neuron)
+	case constants.MessageActionNeuronCastAnyway:
+
+		return b.castAnyway(neuron)
+
 	default:
 		return errors.ErrUnsupportedMessageAction(action)
 	}
@@ -414,6 +421,58 @@ func (b *BrainLocal) tryActivateNeuron(neuron *Neuron) error {
 	}
 
 	return b.activateNeuron(neuron)
+}
+
+func (b *BrainLocal) tryCast(neuron *Neuron) error {
+	logger := b.logger.With(zap.String("neuron", neuron.id))
+	if neuron.state != NeuronStateInhibited {
+		logger.Debug("neuron not process done, should not cast")
+		return nil
+	}
+	logger.Debug("neuron try to cast")
+
+	// 决策出边/传导组
+	selected := neuron.selectFn(b)
+	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
+	for linkID, _ := range neuron.castGroups[selected] {
+		link := b.getLink(linkID)
+		if link.state == LinkStateWait {
+			link.state = LinkStateReady
+			b.SendMessage(constants.Message{
+				Kind:   constants.MessageKindLink,
+				Action: constants.MessageActionLinkReady,
+				ID:     link.id,
+			})
+		} else { // LinkStateWait or LinkStateReady
+			logger.Debug("already cast, will not cast again", zap.String("link", link.id))
+		}
+	}
+
+	return nil
+}
+
+func (b *BrainLocal) castAnyway(neuron *Neuron) error {
+	logger := b.logger.With(zap.String("neuron", neuron.id))
+	logger.Debug("neuron will cast anyway")
+
+	// 决策出边/传导组
+	selected := neuron.selectFn(b)
+	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage
+	for linkID, _ := range neuron.castGroups[selected] {
+		link := b.getLink(linkID)
+		if link.state == LinkStateWait || link.state == LinkStateInit { // different with tryCast(), link can also cast when its state is Init
+			link.state = LinkStateReady
+			b.SendMessage(constants.Message{
+				Kind:   constants.MessageKindLink,
+				Action: constants.MessageActionLinkReady,
+				ID:     link.id,
+			})
+		} else { // LinkStateReady
+			return errors.Wrapf(errors.ErrTryProcessLater, "already casting")
+		}
+	}
+
+	return nil
 }
 
 // ifNeuronShouldActivate return link IDs in trigged trigger group
@@ -469,22 +528,8 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 
 	// SucceedCount++
 	neuron.count.succeed++
-	// 决策出边/传导组
-	selected := neuron.selectFn(b)
-	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
-	for linkID, _ := range neuron.castGroups[selected] {
-		link := b.getLink(linkID)
-		if link.state == LinkStateWait {
-			link.state = LinkStateReady
-			b.SendMessage(constants.Message{
-				Kind:   constants.MessageKindLink,
-				Action: constants.MessageActionLinkReady,
-				ID:     link.id,
-			})
-		}
-	}
 
-	return nil
+	return b.tryCast(neuron)
 }
 
 func (b *BrainLocal) ensureMemoryInit() error {

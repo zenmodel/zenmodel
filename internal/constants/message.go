@@ -29,5 +29,6 @@ const (
 	MessageActionLinkWait          MessageAction = "link_wait"
 	MessageActionNeuronTryActivate MessageAction = "try_activate_neuron"
 	MessageActionNeuronTryInhibit  MessageAction = "try_inhibit_neuron"
+	MessageActionNeuronCastAnyway  MessageAction = "cast_anyway"
 	MessageActionBrainSleep        MessageAction = "brain_sleep"
 )
