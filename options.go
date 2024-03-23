@@ -96,7 +96,7 @@ func WithLabels(labels map[string]string) NeuronOption {
 }
 
 // WithSelectFn sets the specific selectFn for Neuron
-func WithSelectFn(selectFn func(brain Brain) string) NeuronOption {
+func WithSelectFn(selectFn func(brain BrainRuntime) string) NeuronOption {
 	return neuronOptionFunc(func(neuron *Neuron) {
 		neuron.selectFn = selectFn
 	})

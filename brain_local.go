@@ -367,9 +367,7 @@ func (b *BrainLocal) HandleNeuron(action constants.MessageAction, neuronID strin
 	case constants.MessageActionNeuronTryActivate:
 		return b.tryActivateNeuron(neuron)
 	case constants.MessageActionNeuronCastAnyway:
-
 		return b.castAnyway(neuron)
-
 	default:
 		return errors.ErrUnsupportedMessageAction(action)
 	}
@@ -432,7 +430,10 @@ func (b *BrainLocal) tryCast(neuron *Neuron) error {
 	logger.Debug("neuron try to cast")
 
 	// 决策出边/传导组
-	selected := neuron.selectFn(b)
+	selected := neuron.selectFn(&brainLocalRuntime{
+		brain:         b,
+		currentNeuron: nil,
+	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
 	for linkID, _ := range neuron.castGroups[selected] {
 		link := b.getLink(linkID)
@@ -456,7 +457,10 @@ func (b *BrainLocal) castAnyway(neuron *Neuron) error {
 	logger.Debug("neuron will cast anyway")
 
 	// 决策出边/传导组
-	selected := neuron.selectFn(b)
+	selected := neuron.selectFn(&brainLocalRuntime{
+		brain:         b,
+		currentNeuron: nil,
+	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage
 	for linkID, _ := range neuron.castGroups[selected] {
 		link := b.getLink(linkID)
@@ -519,7 +523,10 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	}
 
 	neuron.count.process++
-	err := neuron.processor.Process(b)
+	err := neuron.processor.Process(&brainLocalRuntime{
+		brain:         b,
+		currentNeuron: neuron,
+	})
 	neuron.state = NeuronStateInhibited
 	if err != nil {
 		neuron.count.failed++

@@ -1,16 +1,16 @@
 package zenmodel
 
 type Processor interface {
-	Process(brain Brain) error
+	Process(brain BrainRuntime) error
 	DeepCopy() Processor
 }
 
 type DefaultProcessor struct {
 	// TODO 增加 timeout, retry
-	processFn func(brain Brain) error
+	processFn func(brain BrainRuntime) error
 }
 
-func (p *DefaultProcessor) Process(brain Brain) error {
+func (p *DefaultProcessor) Process(brain BrainRuntime) error {
 	// TODO wrap process func, wrap timeout, retry
 	return p.processFn(brain)
 }
@@ -23,7 +23,7 @@ func (p *DefaultProcessor) DeepCopy() Processor {
 
 type EndProcessor struct{}
 
-func (p *EndProcessor) Process(brain Brain) error {
+func (p *EndProcessor) Process(brain BrainRuntime) error {
 	return nil
 }
 
