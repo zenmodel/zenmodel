@@ -235,7 +235,7 @@ func (b *BrainLocal) trigLinks(linkIDs ...string) error {
 	// goroutine wait
 	var wg sync.WaitGroup
 	for _, linkID := range linkIDs {
-		link := b.GetLink(linkID)
+		link := b.getLink(linkID)
 		if link == nil {
 			continue
 		}
@@ -323,7 +323,7 @@ func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 }
 
 func (b *BrainLocal) HandleLink(action constants.MessageAction, linkID string) error {
-	link := b.GetLink(linkID)
+	link := b.getLink(linkID)
 	if link == nil {
 		return errors.ErrLinkNotFound(linkID)
 	}
@@ -334,7 +334,7 @@ func (b *BrainLocal) HandleLink(action constants.MessageAction, linkID string) e
 	case constants.MessageActionLinkWait:
 		// do nothing
 	case constants.MessageActionLinkReady:
-		destNeuron := b.GetNeuron(link.to)
+		destNeuron := b.getNeuron(link.to)
 		if destNeuron == nil {
 			return errors.ErrNeuronNotFound(link.to)
 		}
@@ -353,7 +353,7 @@ func (b *BrainLocal) HandleLink(action constants.MessageAction, linkID string) e
 }
 
 func (b *BrainLocal) HandleNeuron(action constants.MessageAction, neuronID string) error {
-	neuron := b.GetNeuron(neuronID)
+	neuron := b.getNeuron(neuronID)
 	if neuron == nil {
 		return errors.ErrNeuronNotFound(neuronID)
 	}
@@ -426,7 +426,7 @@ func (b *BrainLocal) ifNeuronShouldActivate(neuron *Neuron) bool {
 	for _, group := range neuron.triggerGroups {
 		trigLinks := make([]*Link, 0)
 		for _, linkID := range group {
-			link := b.GetLink(linkID)
+			link := b.getLink(linkID)
 			if link.state == LinkStateReady {
 				trigLinks = append(trigLinks, link)
 			} else {
@@ -446,7 +446,7 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	// in-link set init
 	for _, group := range neuron.triggerGroups {
 		for _, linkID := range group {
-			link := b.GetLink(linkID)
+			link := b.getLink(linkID)
 			link.state = LinkStateInit
 		}
 	}
@@ -454,7 +454,7 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	// out-link set wait
 	for _, group := range neuron.castGroups {
 		for linkID, _ := range group {
-			link := b.GetLink(linkID)
+			link := b.getLink(linkID)
 			link.state = LinkStateWait
 		}
 	}
@@ -473,7 +473,7 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 	selected := neuron.selectFn(b)
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
 	for linkID, _ := range neuron.castGroups[selected] {
-		link := b.GetLink(linkID)
+		link := b.getLink(linkID)
 		if link.state == LinkStateWait {
 			link.state = LinkStateReady
 			b.SendMessage(constants.Message{

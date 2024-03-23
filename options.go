@@ -75,3 +75,29 @@ func WithID(brainID string) Option {
 		brainLocal.id = brainID
 	})
 }
+
+// NeuronOption configures a neuron.
+type NeuronOption interface {
+	apply(neuron *Neuron)
+}
+
+// neuronOptionFunc wraps a func, so it satisfies the NeuronOption interface.
+type neuronOptionFunc func(*Neuron)
+
+func (f neuronOptionFunc) apply(neuron *Neuron) {
+	f(neuron)
+}
+
+// WithLabels sets the specific labels for Neuron
+func WithLabels(labels map[string]string) NeuronOption {
+	return neuronOptionFunc(func(neuron *Neuron) {
+		neuron.labels = labels
+	})
+}
+
+// WithSelectFn sets the specific selectFn for Neuron
+func WithSelectFn(selectFn func(brain Brain) string) NeuronOption {
+	return neuronOptionFunc(func(neuron *Neuron) {
+		neuron.selectFn = selectFn
+	})
+}
