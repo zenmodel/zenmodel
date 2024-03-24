@@ -435,7 +435,7 @@ func (b *BrainLocal) tryCast(neuron *Neuron) error {
 		currentNeuron: nil,
 	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
-	for linkID, _ := range neuron.castGroups[selected] {
+	for linkID := range neuron.castGroups[selected] {
 		link := b.getLink(linkID)
 		if link.state == LinkStateWait {
 			link.state = LinkStateReady
@@ -462,7 +462,7 @@ func (b *BrainLocal) castAnyway(neuron *Neuron) error {
 		currentNeuron: nil,
 	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage
-	for linkID, _ := range neuron.castGroups[selected] {
+	for linkID := range neuron.castGroups[selected] {
 		link := b.getLink(linkID)
 		if link.state == LinkStateWait || link.state == LinkStateInit { // different with tryCast(), link can also cast when its state is Init
 			link.state = LinkStateReady
@@ -516,7 +516,7 @@ func (b *BrainLocal) activateNeuron(neuron *Neuron) error {
 
 	// out-link set wait
 	for _, group := range neuron.castGroups {
-		for linkID, _ := range group {
+		for linkID := range group {
 			link := b.getLink(linkID)
 			link.state = LinkStateWait
 		}
