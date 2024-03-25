@@ -186,7 +186,7 @@ func (n *Neuron) deleteCastGroup(groupName string) error {
 	}
 
 	ungroupLinks := []string{}
-	for linkID, _ := range n.castGroups[groupName] {
+	for linkID := range n.castGroups[groupName] {
 		ungroupLinks = append(ungroupLinks, linkID)
 	}
 	// delete
@@ -207,7 +207,7 @@ func (cg CastGroup) array() []string {
 		return nil
 	}
 	ret := make([]string, 0, len(cg))
-	for s, _ := range cg {
+	for s := range cg {
 		ret = append(ret, s)
 	}
 
@@ -216,7 +216,7 @@ func (cg CastGroup) array() []string {
 
 func (cgs CastGroups) containsLink(linkID string) bool {
 	for _, group := range cgs {
-		for curLinkID, _ := range group {
+		for curLinkID := range group {
 			if linkID == curLinkID {
 				return true
 			}
@@ -234,7 +234,7 @@ func (n *Neuron) addTriggerGroup(links ...*Link) error {
 	if len(links) == 0 {
 		return nil
 	}
-	newGroup := []string{}
+	newGroup := make([]string, 0)
 	for _, link := range links {
 		// 检查是否是当前节点的传入连接
 		if link.to != n.id {

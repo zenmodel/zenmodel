@@ -23,7 +23,7 @@ func (p *DefaultProcessor) DeepCopy() Processor {
 
 type EndProcessor struct{}
 
-func (p *EndProcessor) Process(brain BrainRuntime) error {
+func (p *EndProcessor) Process(_ BrainRuntime) error {
 	return nil
 }
 
