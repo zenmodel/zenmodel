@@ -47,22 +47,15 @@ func main() {
 	// block process util brain sleeping
 	brain.Wait()
 
-	v, found := brain.GetMemory("messages")
-	if found {
-		messages, _ := json.Marshal(v)
-		fmt.Printf("messages: %s\n", messages)
-	}
+	messages, _ := json.Marshal(brain.GetMemory("messages"))
+	fmt.Printf("messages: %s\n", messages)
 }
 
 func generate(b zenmodel.BrainRuntime) error {
 	fmt.Println("generation assistant running...")
 
 	// get messages form memory
-	v, found := b.GetMemory("messages")
-	if !found {
-		return fmt.Errorf("memory [%s] not found", "messages")
-	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 
 	prompt := openai.ChatCompletionMessage{
 		Role: openai.ChatMessageRoleSystem,
@@ -96,11 +89,7 @@ func reflect(b zenmodel.BrainRuntime) error {
 	fmt.Println("reflection assistant running...")
 
 	// get messages form memory
-	v, found := b.GetMemory("messages")
-	if !found {
-		return fmt.Errorf("memory [%s] not found", "messages")
-	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 	roleReverse := func(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
 		ret := []openai.ChatCompletionMessage{}
 		for _, msg := range msgs {
@@ -146,11 +135,10 @@ Provide detailed recommendations, including requests for length, depth, style, e
 }
 
 func generationNext(b zenmodel.BrainRuntime) string {
-	v, found := b.GetMemory("messages")
-	if !found {
+	if !b.ExistMemory("messages") {
 		return "end"
 	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 	if len(messages) > 6 {
 		return "end"
 	}

@@ -43,11 +43,8 @@ func main() {
 	// block process util brain sleeping
 	brain.Wait()
 
-	v, found := brain.GetMemory("messages")
-	if found {
-		messages, _ := json.Marshal(v)
-		fmt.Printf("messages: %s\n", messages)
-	}
+	messages, _ := json.Marshal(brain.GetMemory("messages"))
+	fmt.Printf("messages: %s\n", messages)
 }
 
 // describe the function & its inputs
@@ -79,11 +76,7 @@ func chatLLM(b zenmodel.BrainRuntime) error {
 	fmt.Println("run here chatLLM...")
 
 	// get need info form memory
-	v, found := b.GetMemory("messages")
-	if !found {
-		return fmt.Errorf("memory [%s] not found", "messages")
-	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 
 	ctx := context.Background()
 	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
@@ -111,11 +104,7 @@ func callTools(b zenmodel.BrainRuntime) error {
 	fmt.Println("run here callTools...")
 
 	// get need info form memory
-	v, found := b.GetMemory("messages")
-	if !found {
-		return fmt.Errorf("memory [%s] not found", "messages")
-	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 	lastMsg := messages[len(messages)-1]
 
 	for _, call := range lastMsg.ToolCalls {
@@ -139,11 +128,10 @@ func callTools(b zenmodel.BrainRuntime) error {
 }
 
 func llmNext(b zenmodel.BrainRuntime) string {
-	v, found := b.GetMemory("messages")
-	if !found {
+	if !b.ExistMemory("messages") {
 		return "end"
 	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 	lastMsg := messages[len(messages)-1]
 	if len(lastMsg.ToolCalls) == 0 { // no need to call any tools
 		return "end"

@@ -77,11 +77,10 @@ _ = bp.BindCastGroupSelectFunc("llm", llmNext)
 
 ```go
 func llmNext(b zenmodel.BrainRuntime) string {
-	v, found := b.GetMemory("messages")
-	if !found {
+	if !b.ExistMemory("messages") {
 		return "end"
 	}
-	messages := v.([]openai.ChatCompletionMessage)
+	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
 	lastMsg := messages[len(messages)-1]
 	if len(lastMsg.ToolCalls) == 0 { // no need to call any tools
 		return "end"
@@ -122,11 +121,8 @@ _ = brain.EntryWithMemory("messages", []openai.ChatCompletionMessage{{Role: open
 // block process util brain sleeping
 brain.Wait()
 
-v, found := brain.GetMemory("messages")
-if found {
-    messages, _ := json.Marshal(v)
-    fmt.Printf("messages: %s\n", messages)
-}
+messages, _ := json.Marshal(brain.GetMemory("messages"))
+fmt.Printf("messages: %s\n", messages)
 ```
 
 ## 其他示例

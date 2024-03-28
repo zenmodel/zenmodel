@@ -113,12 +113,23 @@ func (b *BrainLocal) SetMemory(keysAndValues ...interface{}) error {
 	return nil
 }
 
-func (b *BrainLocal) GetMemory(key interface{}) (interface{}, bool) {
+func (b *BrainLocal) GetMemory(key interface{}) interface{} {
 	if b.memory == nil {
-		return nil, false
+		return nil
+	}
+	v, _ := b.memory.Get(key)
+
+	return v
+}
+
+func (b *BrainLocal) ExistMemory(key interface{}) bool {
+	if b.memory == nil {
+		return false
 	}
 
-	return b.memory.Get(key)
+	_, ok := b.memory.Get(key)
+
+	return ok
 }
 
 func (b *BrainLocal) DeleteMemory(key interface{}) {
@@ -127,6 +138,14 @@ func (b *BrainLocal) DeleteMemory(key interface{}) {
 	}
 
 	b.memory.Del(key)
+}
+
+func (b *BrainLocal) ClearMemory() {
+	if b.memory == nil {
+		return
+	}
+
+	b.memory.Clear()
 }
 
 func (b *BrainLocal) GetState() BrainState {
