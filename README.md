@@ -139,3 +139,10 @@ ChatAgent 将聊天消息列表作为输入，并输出新消息到消息列表�
 当输出质量是一个主要问题时，通常会结合一些自我批判或反思和外部验证来优化系统的输出。以下示例演示了实现此类设计的研究。
 
 - [Basic Reflection](./examples/reflection/main.go): 在 `Brain` 中添加一个简单的 "reflect" 步骤来提示您的系统修改其输出。
+
+
+### Planning
+
+以下示例实现了典型的“计划和执行”风格的代理架构，其中LLM规划器将用户请求分解为程序，执行器执行程序，LLM根据程序输出合成响应（和/或动态重新规划）。
+
+- [Plan-and-execute](./examples/plan-and-excute): 一个简单的代理，带有一个生成多步骤任务列表的 Planner，一个调用计划中工具的执行器 Agent，以及一个响应或生成更新计划的 replanner。
