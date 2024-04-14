@@ -1,10 +1,10 @@
 module github.com/zenmodel/zenmodel/example
 
-go 1.21.0
+go 1.19
 
 require (
-	github.com/sashabaranov/go-openai v1.20.3
-	github.com/zenmodel/zenmodel v0.1.0
+	github.com/sashabaranov/go-openai v1.21.0
+	github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f
 )
 
 require (
@@ -24,5 +24,3 @@ require (
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
-
-replace github.com/zenmodel/zenmodel v0.1.0 => ./..

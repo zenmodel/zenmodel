@@ -30,16 +30,12 @@ func main() {
 
 	time.Sleep(10 * time.Second)
 
-	name, found := brain.GetMemory("name")
-	if !found {
-		fmt.Println("name not found")
-		return
-	}
+	name := brain.GetMemory("name").(string)
 	fmt.Printf("result: my name is %s.\n", name)
 	//brain.GetStatus()
 }
 
-func fn1(b zenmodel.Brain) error {
+func fn1(b zenmodel.BrainRuntime) error {
 	fmt.Println("start fn1 ..............")
 
 	if err := b.SetMemory("name", "Clay"); err != nil {
@@ -49,15 +45,12 @@ func fn1(b zenmodel.Brain) error {
 	return nil
 }
 
-func fn2(b zenmodel.Brain) error {
+func fn2(b zenmodel.BrainRuntime) error {
 	fmt.Println("start fn2 ..............")
 
-	firstName, found := b.GetMemory("name")
-	if !found {
-		return nil
-	}
+	firstName := b.GetMemory("name").(string)
 
-	name := firstName.(string) + " Zhang"
+	name := firstName + " Zhang"
 	if err := b.SetMemory("name", name); err != nil {
 		return err
 	}
