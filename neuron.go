@@ -226,10 +226,10 @@ func (cgs CastGroups) containsLink(linkID string) bool {
 	return false
 }
 
-// AddTriggerGroup 默认情况下单个传入边自己一条边一组。AddTriggerGroup 将指定指定传入连接加到同一触发组。
-// AddTriggerGroup 增加触发组，如果增加的触发组包含了存量的触发组，则存量的触发组会移除。这样同时也可以去重
-// TODO 增加线程安全， add lock
+// AddTriggerGroup by default, a single in-link is a group of its own. AddTriggerGroup adds the specified in-link to the same trigger group.
+// it also creates the trigger group. If the added trigger group contains the existing trigger group, the existing trigger group will be removed. This can also be deduplicated at the same time(you add an exist named group, existing group will be removed first).
 // add trigger group with links
+// TODO 增加线程安全， add lock
 func (n *Neuron) addTriggerGroup(links ...*Link) error {
 	if len(links) == 0 {
 		return nil
