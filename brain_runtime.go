@@ -16,6 +16,9 @@ type BrainRuntime interface {
 	DeleteMemory(key interface{})
 	// ClearMemory clear all memories
 	ClearMemory()
+	// GetCurrentNeuronID get current neuron id
+	GetCurrentNeuronID() string
+	// ContinueCast keep current process running, and continue cast
 	ContinueCast()
 }
 
@@ -42,6 +45,10 @@ func (r *brainLocalRuntime) DeleteMemory(key interface{}) {
 
 func (r *brainLocalRuntime) ClearMemory() {
 	r.brain.ClearMemory()
+}
+
+func (r *brainLocalRuntime) GetCurrentNeuronID() string {
+	return r.currentNeuron.id
 }
 
 func (r *brainLocalRuntime) ContinueCast() {
