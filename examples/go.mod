@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/sashabaranov/go-openai v1.21.0
-	github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f
-	github.com/zenmodel/zenmodel-contrib v0.0.0-20240414101936-d9a68ef330f8
+	github.com/zenmodel/zenmodel v0.0.0-20240418103454-28beb3a69eb7
+	github.com/zenmodel/zenmodel-contrib v0.0.0-20240417102527-001b9a90e8c3
 )
 
 require (
@@ -31,8 +31,4 @@ require (
 	k8s.io/client-go v0.29.3 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
-)
-
-replace (
-	github.com/zenmodel/zenmodel  => ../
 )
