@@ -143,6 +143,9 @@ fmt.Printf("messages: %s\n", messages)
 
 ### Link
 
+<details>
+<summary>展开查看</summary>
+
 Neuron 之间的连接是 `Link`，`Link` 是有方向的，具备`源`和`目的` 。
 通常情况下，`源`和`目的`都指定了 Neuron。添加`普通 Link` 的方法如下：
 
@@ -172,7 +175,14 @@ id, err := bp.AddEntryLink("dest_neuron")
 id, err := bp.AddEndLink("src_neuron")
 ```
 
+</details>
+
+
 ### Neuron
+
+<details>
+<summary>展开查看</summary>
+
 
 `Neuron` 是 Brain 中的神经元，可以理解为一个处理单元，它执行处理逻辑，并且可以读写 Brain 的 Memory。Memory 作为 Brain
 的上下文可以被所有 Neuron 共享。
@@ -263,7 +273,13 @@ err := bp.AddLinkToCastGroup("neuron_id", "group_A", linkID1, linkID2)
 err := bp.AddTriggerGroup("neuron_id", "group_B", linkID1, linkID2)
 ```
 
+</details>
+
+
 ### Brainprint
+
+<details>
+<summary>展开查看</summary>
 
 `Brainprint` 是大脑蓝图(Brain Blueprint) 的简称，它定义了 Brain 的图拓扑结构以及所有 Neuron 和 Link 以及 Brain
 的运行参数。可以通过 `Brainprint` 构建出可运行的 `Brain`。
@@ -273,7 +289,12 @@ err := bp.AddTriggerGroup("neuron_id", "group_B", linkID1, linkID2)
 brain := bp.Build(zenmodel.WithWorkerNum(3), )
 ```
 
+</details>
+
 ### Brain
+
+<details>
+<summary>展开查看</summary>
 
 `Brain` 是可触发运行的实例。根据触发的 Link 传导到各个 Neuron，每个 Neuron 执行各自的逻辑并且读写 Memory。
 
@@ -316,66 +337,246 @@ ContinueCast()
 }
 ```
 
-[//]: # (## 如何)
+</details>
 
-[//]: # ()
-[//]: # (<details>)
-
-[//]: # (<summary> 如何构建包含并行与等待 Neuron 的 Brain </summary>)
-
-[//]: # ()
-[//]: # (并发的执行 Neuron，并且支持下游 Neuron 等待指定的上游全都执行完成后才开始执行。)
-
-[//]: # ()
-[//]: # (```go)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # ()
-[//]: # (</details>)
+## 如何
 
 
-[//]: # (<details>)
+<details>
+<summary> 并行与等待：如何构建包含并行与等待 Neuron 的 Brain </summary>
 
-[//]: # (<summary> 如何给 Neuron 添加下游分支选择函数 </summary>)
+- TrigLinks() 或 Entry() 是并行的触发 links 的
+- Neuron 完成后 Cast group 中的 links 也是并行触发的
+- Neuron 等待指定的上游全都执行完成后才开始执行。通过设置 trigger group 来定义需要等待哪些上游完成。
 
-[//]: # ()
-[//]: # ()
-[//]: # (</details>)
+完整示例见： [examples/flow-topology/parallel](./examples/flow-topology/parallel-and-wait/main.go)
 
-[//]: # ()
-[//]: # ()
-[//]: # (<details>)
+```go
+var (
+	entryInput, entryPoetry, entryJoke string
+)
 
-[//]: # (<summary> 如何使用 CastGroup 构建传播到多个下游的分支 </summary>)
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("input", inputFn)
+	bp.AddNeuron("poetry-template", poetryFn)
+	bp.AddNeuron("joke-template", jokeFn)
+	bp.AddNeuron("generate", genFn)
 
-[//]: # ()
-[//]: # ()
-[//]: # (</details>)
+	inputIn, _ := bp.AddLink("input", "generate")
+	poetryIn, _ := bp.AddLink("poetry-template", "generate")
+	jokeIn, _ := bp.AddLink("joke-template", "generate")
 
-[//]: # ()
-[//]: # ()
-[//]: # (<details>)
+	entryInput, _ = bp.AddEntryLink("input")
+	entryPoetry, _ = bp.AddEntryLink("poetry-template")
+	entryJoke, _ = bp.AddEntryLink("joke-template")
 
-[//]: # (<summary> 如何嵌套: Brain 作为一个 Neuron </summary>)
+	_ = bp.AddTriggerGroup("generate", inputIn, poetryIn)
+	_ = bp.AddTriggerGroup("generate", inputIn, jokeIn)
 
-[//]: # ()
-[//]: # (nest)
+	brain := bp.Build()
 
-[//]: # ()
-[//]: # (</details>)
+	// case 1: entry poetry and input
+	// expect: generate poetry
+	_ = brain.TrigLinks(entryPoetry)
+	_ = brain.TrigLinks(entryInput)
 
-[//]: # ()
+	// case 2:entry joke and input
+	// expect: generate joke
+	//_ = brain.TrigLinks(entryJoke)
+	//_ = brain.TrigLinks(entryInput)
+
+	// case 3: entry poetry and joke
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
+	//_ = brain.TrigLinks(entryJoke)
+
+	// case 4: entry only poetry
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
+
+	// case 5: entry all
+	// expect: The first done trigger group triggered activates the generated Neuron,
+	// and the trigger group triggered later does not activate the generated Neuron again.
+	//_ = brain.Entry()
+
+	brain.Wait()
+}
+
+func inputFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("input", "orange")
+	return nil
+}
+
+func poetryFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("template", "poetry")
+	return nil
+}
+
+func jokeFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("template", "joke")
+	return nil
+}
+
+func genFn(b zenmodel.BrainRuntime) error {
+	input := b.GetMemory("input").(string)
+	tpl := b.GetMemory("template").(string)
+	fmt.Printf("Generating %s for %s\n", tpl, input)
+	return nil
+}
+
+
+```
+
+
+</details>
+
+
+<details>
+<summary> 分支：如何使用 CastGroup 构建传播到多个下游的分支 </summary>
+
+完整示例见： [examples/flow-topology/branch](./examples/flow-topology/branch/main.go)
+
+```go
+
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("condition", func(runtime zenmodel.BrainRuntime) error {
+		return nil // do nothing
+	})
+	bp.AddNeuron("cell-phone", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Cell Phone\n")
+		return nil
+	})
+	bp.AddNeuron("laptop", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Laptop\n")
+		return nil
+	})
+	bp.AddNeuron("ps5", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: PS5\n")
+		return nil
+	})
+	bp.AddNeuron("tv", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: TV\n")
+		return nil
+	})
+	bp.AddNeuron("printer", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Printer\n")
+		return nil
+	})
+
+	cellPhone, _ := bp.AddLink("condition", "cell-phone")
+	laptop, _ := bp.AddLink("condition", "laptop")
+	ps5, _ := bp.AddLink("condition", "ps5")
+	tv, _ := bp.AddLink("condition", "tv")
+	printer, _ := bp.AddLink("condition", "printer")
+	// add entry link
+	_, _ = bp.AddEntryLink("condition")
+
+	/*
+	   Category 1: Electronics
+	   - Cell Phone
+	   - Laptop
+	   - PS5
+
+	   Category 2: Entertainment Devices
+	   - Cell Phone
+	   - PS5
+	   - TV
+
+	   Category 3: Office Devices
+	   - Laptop
+	   - Printer
+	   - Cell Phone
+	*/
+	_ = bp.AddLinkToCastGroup("condition", "electronics",
+		cellPhone, laptop, ps5)
+	_ = bp.AddLinkToCastGroup("condition",
+		"entertainment-devices",
+		cellPhone, ps5, tv)
+	_ = bp.AddLinkToCastGroup(
+		"condition", "office-devices",
+		laptop, printer, cellPhone)
+
+	_ = bp.BindCastGroupSelectFunc("condition", func(brain zenmodel.BrainRuntime) string {
+		return brain.GetMemory("category").(string)
+	})
+
+	brain := bp.Build()
+
+	_ = brain.EntryWithMemory("category", "electronics")
+	//_ = brain.EntryWithMemory("category", "entertainment-devices")
+	//_ = brain.EntryWithMemory("category", "office-devices")
+	//_ = brain.EntryWithMemory("category", "NOT-Defined")
+
+	brain.Wait()
+}
+```
+
+</details>
+
+
+
+<details>
+
+<summary> 嵌套: 如何将 Brain 作为另一个 Brain 的一个 Neuron </summary>
+
+你可以参照 [plan-and-excute](./examples/plan-and-excute/agent.go) 中的 agent neuron, 这个 neuron 就是嵌套的 brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent) 
+
+也可以参考示例 [nested](./examples/flow-topology/nested/main.go) 如下：
+
+```go
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("nested", nestedBrain)
+	_, _ = bp.AddEntryLink("nested")
+
+	brain := bp.Build()
+	_ = brain.Entry()
+	brain.Wait()
+
+	fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
+	
+	// nested result: run here neuron: nested.run
+}
+
+func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("run", func(curBrain zenmodel.BrainRuntime) error {
+		_ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
+		return nil
+	})
+	_, _ = bp.AddEntryLink("run")
+
+	brain := bp.Build()
+
+	// run nested brain
+	_ = brain.Entry()
+	brain.Wait()
+	// get nested brain result
+	result := brain.GetMemory("result").(string)
+	// pass nested brain result to outer brain
+	_ = outerBrain.SetMemory("nested_result", result)
+
+	return nil
+}
+
+
+
+```
+
+
+</details>
+
+
 [//]: # (<details>)
 
 [//]: # (<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>)
 
 [//]: # ()
-[//]: # ()
 [//]: # (</details>)
 
-## 应用示例
+## Agent 示例
 
 ### 工具使用 Tool Use Agent
 
