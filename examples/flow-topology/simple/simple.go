@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/zenmodel/zenmodel"
 )
@@ -22,17 +21,14 @@ func main() {
 		return
 	}
 
-	//bp.AddLinkToCastGroup()
-	//bp.AddTriggerGroup()
 	brain := bp.Build()
 
-	brain.Entry()
+	_ = brain.Entry()
 
-	time.Sleep(10 * time.Second)
+	brain.Wait()
 
 	name := brain.GetMemory("name").(string)
 	fmt.Printf("result: my name is %s.\n", name)
-	//brain.GetStatus()
 }
 
 func fn1(b zenmodel.BrainRuntime) error {

@@ -320,13 +320,13 @@ ContinueCast()
 
 
 <details>
-
 <summary> 并行与等待：如何构建包含并行与等待 Neuron 的 Brain </summary>
 
 - TrigLinks() 或 Entry() 是并行的触发 links 的
 - Neuron 完成后 Cast group 中的 links 也是并行触发的
-- Neuron 等待指定的上游全都执行完成后才开始执行。
-- 通过设置 trigger group 来定义需要等待哪些上游完成
+- Neuron 等待指定的上游全都执行完成后才开始执行。通过设置 trigger group 来定义需要等待哪些上游完成。
+
+完整示例见： [examples/flow-topology/parallel](./examples/flow-topology/parallel-and-wait/main.go)
 
 ```go
 var (
@@ -410,20 +410,85 @@ func genFn(b zenmodel.BrainRuntime) error {
 
 
 <details>
+<summary> 分支：如何使用 CastGroup 构建传播到多个下游的分支 </summary>
 
-<summary> 如何给 Neuron 添加下游分支选择函数 </summary>
+完整示例见： [examples/flow-topology/branch](./examples/flow-topology/branch/main.go)
 
+```go
 
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("condition", func(runtime zenmodel.BrainRuntime) error {
+		return nil // do nothing
+	})
+	bp.AddNeuron("cell-phone", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Cell Phone\n")
+		return nil
+	})
+	bp.AddNeuron("laptop", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Laptop\n")
+		return nil
+	})
+	bp.AddNeuron("ps5", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: PS5\n")
+		return nil
+	})
+	bp.AddNeuron("tv", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: TV\n")
+		return nil
+	})
+	bp.AddNeuron("printer", func(runtime zenmodel.BrainRuntime) error {
+		fmt.Printf("Run here: Printer\n")
+		return nil
+	})
 
-</details>
+	cellPhone, _ := bp.AddLink("condition", "cell-phone")
+	laptop, _ := bp.AddLink("condition", "laptop")
+	ps5, _ := bp.AddLink("condition", "ps5")
+	tv, _ := bp.AddLink("condition", "tv")
+	printer, _ := bp.AddLink("condition", "printer")
+	// add entry link
+	_, _ = bp.AddEntryLink("condition")
 
+	/*
+	   Category 1: Electronics
+	   - Cell Phone
+	   - Laptop
+	   - PS5
 
+	   Category 2: Entertainment Devices
+	   - Cell Phone
+	   - PS5
+	   - TV
 
-<details>
+	   Category 3: Office Devices
+	   - Laptop
+	   - Printer
+	   - Cell Phone
+	*/
+	_ = bp.AddLinkToCastGroup("condition", "electronics",
+		cellPhone, laptop, ps5)
+	_ = bp.AddLinkToCastGroup("condition",
+		"entertainment-devices",
+		cellPhone, ps5, tv)
+	_ = bp.AddLinkToCastGroup(
+		"condition", "office-devices",
+		laptop, printer, cellPhone)
 
-<summary> 如何使用 CastGroup 构建传播到多个下游的分支 </summary>
+	_ = bp.BindCastGroupSelectFunc("condition", func(brain zenmodel.BrainRuntime) string {
+		return brain.GetMemory("category").(string)
+	})
 
+	brain := bp.Build()
 
+	_ = brain.EntryWithMemory("category", "electronics")
+	//_ = brain.EntryWithMemory("category", "entertainment-devices")
+	//_ = brain.EntryWithMemory("category", "office-devices")
+	//_ = brain.EntryWithMemory("category", "NOT-Defined")
+
+	brain.Wait()
+}
+```
 
 </details>
 
