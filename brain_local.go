@@ -454,7 +454,9 @@ func (b *BrainLocal) tryCast(neuron *Neuron) error {
 		currentNeuron: nil,
 	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage （为 init 的则不改变）
+	selectedLinks := make(map[string]struct{})
 	for linkID := range neuron.castGroups[selected] {
+		selectedLinks[linkID] = struct{}{}
 		link := b.getLink(linkID)
 		if link.state == LinkStateWait {
 			link.state = LinkStateReady
@@ -465,6 +467,20 @@ func (b *BrainLocal) tryCast(neuron *Neuron) error {
 			})
 		} else { // LinkStateWait or LinkStateReady
 			logger.Debug("already cast, will not cast again", zap.String("link", link.id))
+		}
+	}
+
+	// 未选择的 out-link 状态从 wait 变为 init
+	for _, group := range neuron.castGroups {
+		for linkID := range group {
+			_, found := selectedLinks[linkID]
+			if found {
+				continue
+			}
+			link := b.getLink(linkID)
+			if link.state == LinkStateWait {
+				link.state = LinkStateInit
+			}
 		}
 	}
 
@@ -481,7 +497,9 @@ func (b *BrainLocal) castAnyway(neuron *Neuron) error {
 		currentNeuron: nil,
 	})
 	// 选中的 cast group 中的 link 状态为 wait 的设置为 ready，SendMessage
+	selectedLinks := make(map[string]struct{})
 	for linkID := range neuron.castGroups[selected] {
+		selectedLinks[linkID] = struct{}{}
 		link := b.getLink(linkID)
 		if link.state == LinkStateWait || link.state == LinkStateInit { // different with tryCast(), link can also cast when its state is Init
 			link.state = LinkStateReady
@@ -492,6 +510,18 @@ func (b *BrainLocal) castAnyway(neuron *Neuron) error {
 			})
 		} else { // LinkStateReady
 			return errors.Wrapf(errors.ErrTryProcessLater, "already casting")
+		}
+	}
+
+	// 未选择的 out-link 状态变为 wait, 因为之前的 cast anyway 可能会将 link 设置为 init 或 ready
+	for _, group := range neuron.castGroups {
+		for linkID := range group {
+			_, found := selectedLinks[linkID]
+			if found {
+				continue
+			}
+			link := b.getLink(linkID)
+			link.state = LinkStateWait
 		}
 	}
 
