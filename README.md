@@ -316,64 +316,137 @@ ContinueCast()
 }
 ```
 
-[//]: # (## 如何)
-
-[//]: # ()
-[//]: # (<details>)
-
-[//]: # (<summary> 如何构建包含并行与等待 Neuron 的 Brain </summary>)
-
-[//]: # ()
-[//]: # (并发的执行 Neuron，并且支持下游 Neuron 等待指定的上游全都执行完成后才开始执行。)
-
-[//]: # ()
-[//]: # (```go)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # ()
-[//]: # (</details>)
+## 如何
 
 
-[//]: # (<details>)
+<details>
 
-[//]: # (<summary> 如何给 Neuron 添加下游分支选择函数 </summary>)
+<summary> 并行与等待：如何构建包含并行与等待 Neuron 的 Brain </summary>
 
-[//]: # ()
-[//]: # ()
-[//]: # (</details>)
+- TrigLinks() 或 Entry() 是并行的触发 links 的
+- Neuron 完成后 Cast group 中的 links 也是并行触发的
+- Neuron 等待指定的上游全都执行完成后才开始执行。
+- 通过设置 trigger group 来定义需要等待哪些上游完成
 
-[//]: # ()
-[//]: # ()
-[//]: # (<details>)
+```go
+var (
+	entryInput, entryPoetry, entryJoke string
+)
 
-[//]: # (<summary> 如何使用 CastGroup 构建传播到多个下游的分支 </summary>)
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("input", inputFn)
+	bp.AddNeuron("poetry-template", poetryFn)
+	bp.AddNeuron("joke-template", jokeFn)
+	bp.AddNeuron("generate", genFn)
 
-[//]: # ()
-[//]: # ()
-[//]: # (</details>)
+	inputIn, _ := bp.AddLink("input", "generate")
+	poetryIn, _ := bp.AddLink("poetry-template", "generate")
+	jokeIn, _ := bp.AddLink("joke-template", "generate")
 
-[//]: # ()
-[//]: # ()
-[//]: # (<details>)
+	entryInput, _ = bp.AddEntryLink("input")
+	entryPoetry, _ = bp.AddEntryLink("poetry-template")
+	entryJoke, _ = bp.AddEntryLink("joke-template")
 
-[//]: # (<summary> 如何嵌套: Brain 作为一个 Neuron </summary>)
+	_ = bp.AddTriggerGroup("generate", inputIn, poetryIn)
+	_ = bp.AddTriggerGroup("generate", inputIn, jokeIn)
 
-[//]: # ()
-[//]: # (nest)
+	brain := bp.Build()
 
-[//]: # ()
-[//]: # (</details>)
+	// case 1: entry poetry and input
+	// expect: generate poetry
+	_ = brain.TrigLinks(entryPoetry)
+	_ = brain.TrigLinks(entryInput)
 
-[//]: # ()
-[//]: # (<details>)
+	// case 2:entry joke and input
+	// expect: generate joke
+	//_ = brain.TrigLinks(entryJoke)
+	//_ = brain.TrigLinks(entryInput)
 
-[//]: # (<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>)
+	// case 3: entry poetry and joke
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
+	//_ = brain.TrigLinks(entryJoke)
 
-[//]: # ()
-[//]: # ()
-[//]: # (</details>)
+	// case 4: entry only poetry
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
+
+	// case 5: entry all
+	// expect: The first done trigger group triggered activates the generated Neuron,
+	// and the trigger group triggered later does not activate the generated Neuron again.
+	//_ = brain.Entry()
+
+	brain.Wait()
+}
+
+func inputFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("input", "orange")
+	return nil
+}
+
+func poetryFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("template", "poetry")
+	return nil
+}
+
+func jokeFn(b zenmodel.BrainRuntime) error {
+	_ = b.SetMemory("template", "joke")
+	return nil
+}
+
+func genFn(b zenmodel.BrainRuntime) error {
+	input := b.GetMemory("input").(string)
+	tpl := b.GetMemory("template").(string)
+	fmt.Printf("Generating %s for %s\n", tpl, input)
+	return nil
+}
+
+
+```
+
+
+</details>
+
+
+<details>
+
+<summary> 如何给 Neuron 添加下游分支选择函数 </summary>
+
+
+
+</details>
+
+
+
+<details>
+
+<summary> 如何使用 CastGroup 构建传播到多个下游的分支 </summary>
+
+
+
+</details>
+
+
+
+<details>
+
+<summary> 如何嵌套: Brain 作为一个 Neuron </summary>
+
+
+nest
+
+
+</details>
+
+
+<details>
+
+<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>
+
+
+
+</details>
 
 ## 应用示例
 
