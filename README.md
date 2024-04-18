@@ -143,6 +143,9 @@ fmt.Printf("messages: %s\n", messages)
 
 ### Link
 
+<details>
+<summary>展开查看</summary>
+
 Neuron 之间的连接是 `Link`，`Link` 是有方向的，具备`源`和`目的` 。
 通常情况下，`源`和`目的`都指定了 Neuron。添加`普通 Link` 的方法如下：
 
@@ -172,7 +175,14 @@ id, err := bp.AddEntryLink("dest_neuron")
 id, err := bp.AddEndLink("src_neuron")
 ```
 
+</details>
+
+
 ### Neuron
+
+<details>
+<summary>展开查看</summary>
+
 
 `Neuron` 是 Brain 中的神经元，可以理解为一个处理单元，它执行处理逻辑，并且可以读写 Brain 的 Memory。Memory 作为 Brain
 的上下文可以被所有 Neuron 共享。
@@ -263,7 +273,13 @@ err := bp.AddLinkToCastGroup("neuron_id", "group_A", linkID1, linkID2)
 err := bp.AddTriggerGroup("neuron_id", "group_B", linkID1, linkID2)
 ```
 
+</details>
+
+
 ### Brainprint
+
+<details>
+<summary>展开查看</summary>
 
 `Brainprint` 是大脑蓝图(Brain Blueprint) 的简称，它定义了 Brain 的图拓扑结构以及所有 Neuron 和 Link 以及 Brain
 的运行参数。可以通过 `Brainprint` 构建出可运行的 `Brain`。
@@ -273,7 +289,12 @@ err := bp.AddTriggerGroup("neuron_id", "group_B", linkID1, linkID2)
 brain := bp.Build(zenmodel.WithWorkerNum(3), )
 ```
 
+</details>
+
 ### Brain
+
+<details>
+<summary>展开查看</summary>
 
 `Brain` 是可触发运行的实例。根据触发的 Link 传导到各个 Neuron，每个 Neuron 执行各自的逻辑并且读写 Memory。
 
@@ -315,6 +336,8 @@ GetCurrentNeuronID() string
 ContinueCast()
 }
 ```
+
+</details>
 
 ## 如何
 
@@ -546,15 +569,14 @@ func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
 </details>
 
 
-<details>
+[//]: # (<details>)
 
-<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>
+[//]: # (<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>)
 
+[//]: # ()
+[//]: # (</details>)
 
-
-</details>
-
-## 应用示例
+## Agent 示例
 
 ### 工具使用 Tool Use Agent
 
