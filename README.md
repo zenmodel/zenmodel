@@ -496,10 +496,51 @@ func main() {
 
 <details>
 
-<summary> 如何嵌套: Brain 作为一个 Neuron </summary>
+<summary> 嵌套: 如何将 Brain 作为另一个 Brain 的一个 Neuron </summary>
+
+你可以参照 [plan-and-excute](./examples/plan-and-excute/agent.go) 中的 agent neuron, 这个 neuron 就是嵌套的 brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent) 
+
+也可以参考示例 [nested](./examples/flow-topology/nested/main.go) 如下：
+
+```go
+func main() {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("nested", nestedBrain)
+	_, _ = bp.AddEntryLink("nested")
+
+	brain := bp.Build()
+	_ = brain.Entry()
+	brain.Wait()
+
+	fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
+	
+	// nested result: run here neuron: nested.run
+}
+
+func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
+	bp := zenmodel.NewBrainPrint()
+	bp.AddNeuron("run", func(curBrain zenmodel.BrainRuntime) error {
+		_ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
+		return nil
+	})
+	_, _ = bp.AddEntryLink("run")
+
+	brain := bp.Build()
+
+	// run nested brain
+	_ = brain.Entry()
+	brain.Wait()
+	// get nested brain result
+	result := brain.GetMemory("result").(string)
+	// pass nested brain result to outer brain
+	_ = outerBrain.SetMemory("nested_result", result)
+
+	return nil
+}
 
 
-nest
+
+```
 
 
 </details>
