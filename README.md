@@ -597,12 +597,14 @@ ChatAgent 接收聊天信息列表作为输入，并将新信息输出到此列�
 
 以下示例实现了典型的“计划和执行”风格的代理架构，其中LLM规划器将用户请求分解为程序，执行器执行程序，LLM根据程序输出合成响应（和/或动态重新规划）。
 
-- [Plan & Execute](./examples/plan-and-excute): 一个简单的代理，带有一个生成多步骤任务列表的 Planner，一个调用计划中工具的执行器
+- [Plan & Execute](./examples/plan-and-excute/main.go): 一个简单的代理，带有一个生成多步骤任务列表的 Planner，一个调用计划中工具的执行器
   Agent，以及一个响应或生成更新计划的 replanner。
 
-[//]: # (### 多代理 Multi-Agent)
+### 多代理 Multi-Agent
 
-[//]: # (TBD)
+多智能体系统由多个决策智能体组成，它们在共享环境中交互以实现共同或冲突的目标。
+
+- [agent-supervisor](./examples/multi-agent/agent-supervisor/main.go) : 一个具备代理主管来帮助委派任务的多代理示例。示例中 Leader 委派任务给 RD(Research and Development) 和 QA(Quality Assurance)，如果代码没有通过测试将会再次交给 RD 重写，并且再次测试，Leader 会根据反馈做出响应的决策，最终返回经过测试的代码。
 
 [//]: # (## 贡献)
 
@@ -625,10 +627,11 @@ ChatAgent 接收聊天信息列表作为输入，并将新信息输出到此列�
 
 #### Processor
 
-| Processor                                                | 简介                                          |
-|----------------------------------------------------------|---------------------------------------------|
-| [calltools](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/calltools)                | 调用工具的 Processor，支持配置 Tool 并调用 Tool          |
-| [openaichat](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openaichat)               | 基于 OpenAI 模型的聊天 Processor                   |
+| Processor                                                                                                             | 简介                                         |
+|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| [calltools](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/calltools)                               | 调用工具的 Processor，支持配置 Tool 并调用 Tool         |
+| [openaichat](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openaichat)                             | 基于 OpenAI 模型的聊天 Processor                  |
 | [openai_structured_output](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openai_structured_output) | 基于 OpenAI Function Calling 的结构化输出 Processor |
+| [go_code_tester](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/go_code_tester)        | Go 单元测试执行器，通常用于测试 LLM 生成的代码    |
 
 
