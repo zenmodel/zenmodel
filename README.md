@@ -569,12 +569,31 @@ func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
 </details>
 
 
-[//]: # (<details>)
+<details>
+<summary> 如何在 processor 中复用其他 processor </summary>
 
-[//]: # (<summary> 如何持续运行 Neuron 且能够不断向下游传播信息，例如监听用户说话的场景 </summary>)
+[zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) 社区有许多功能完备的 Processor， 或者项目的代码中实现了其他的 Processor。有时候需要使用到这些 Processor 的功能，或者使用多个 Processor 的组合，或者需要为已有的 Processor 增加额外功能。
+这些情况你都可以在当前 Processor 或者 ProcessFn 中复用其他的 Processor。只需要将当前 Processor 或者 ProcessFn 的 `BrainRuntime` 作为参数传递给其他 Processor 或者 ProcessFn 即可。
 
-[//]: # ()
-[//]: # (</details>)
+就例如 [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go) 中的 `QAProcess` 函数, 它复用了 [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) 社区 的 [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel-contrib/blob/main/processor/go_code_tester/processor.go)
+并且在复用的 Processor 之后添加了额外的功能。
+
+```go
+func QAProcess(b zenmodel.BrainRuntime) error {
+	p := go_code_tester.NewProcessor().WithTestCodeKeep(true)
+	if err := p.Process(b); err != nil {
+		return err
+	}
+
+	if err := b.SetMemory(memKeyFeedback, b.GetCurrentNeuronID()); err != nil {
+		return err
+	}
+
+	return nil
+}
+```
+
+</details>
 
 ## Agent 示例
 
