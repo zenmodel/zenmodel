@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/sashabaranov/go-openai v1.21.0
 	github.com/zenmodel/zenmodel v0.0.0-20240418103454-28beb3a69eb7
-	github.com/zenmodel/zenmodel-contrib v0.0.0-20240417102527-001b9a90e8c3
+	github.com/zenmodel/zenmodel-contrib v0.1.0
 )
 
 require (
