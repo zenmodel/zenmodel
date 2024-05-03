@@ -3,6 +3,7 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/zenmodel/zenmodel)
 [![GoDoc](https://pkg.go.dev/badge/github.com/zenmodel/zenmodel?status.svg)](https://pkg.go.dev/github.com/zenmodel/zenmodel?tab=doc)
 ![GitHub License](https://img.shields.io/github/license/zenmodel/zenmodel)
+[![](https://dcbadge.vercel.app/api/server/6YhZquB4zb?compact=true&style=flat)](https://discord.gg/6YhZquB4zb)
 
 [//]: # ([![Sourcegraph]&#40;https://sourcegraph.com/github.com/zenmodel/zenmodel/-/badge.svg&#41;]&#40;https://sourcegraph.com/github.com/zenmodel/zenmodel?badge&#41;)
 
