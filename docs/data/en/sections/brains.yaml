@@ -1,0 +1,47 @@
+# section information
+section:
+  name: Brains
+  id: publications
+  enable: true
+  weight: 6
+  showOnNavbar: true
+  # Can optionally hide the title in sections
+  # hideTitle: true
+
+# filter buttons
+buttons:
+- name: All
+  filter: "all"
+- name: RAG
+  filter: "rag"
+- name: ChatBot
+  filter: "chat-bot"
+- name: Tool Use
+  filter: "tool-use"
+- name: SQL
+  filter: "sql"
+- name: Query analysis
+  filter: "query-analysis"
+
+
+# your publications
+publications:
+- title: OpenAI Tool Agent
+  # publishedIn:
+  #   name: 2020 IEEE Region Symposium (TENSYMP)
+  #   date: 7 June 2020
+  #   url: https://example.com
+  authors:
+  - name: zenmodel
+    url: https://github.com/zenmodel
+  # - name: Dr. Lessmad
+  #   url: https://example.com
+  # - name: Dr. Moremad
+  #   url: https://example.com
+  # - name: Dr. Goodman
+  #   url: https://example.com
+  paper:
+    summary: A chat agent based on the OpenAI model, with tool support and calling.
+    url: https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent
+  categories: ["tool-use"]
+  tags: ["OpenAI", "Tool Use"]
