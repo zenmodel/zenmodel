@@ -1,0 +1,10 @@
+{
+ "compilerOptions": {
+  "baseUrl": ".",
+  "paths": {
+   "*": [
+    "../../../../../../../Library/Caches/hugo_cache/modules/filecache/modules/pkg/mod/github.com/zenmodel/toha/v4@v4.0.0-20240504134141-bf87524e4d24/assets/*"
+   ]
+  }
+ }
+}
