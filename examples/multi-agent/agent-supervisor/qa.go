@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/zenmodel/zenmodel"
-	"github.com/zenmodel/zenmodel-contrib/processor/go_code_tester"
+	"github.com/zenmodel/zenmodel/community/processor/go_code_tester"
 )
 
 const (

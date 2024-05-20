@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel-contrib/processor/openai_structured_output"
+	"github.com/zenmodel/zenmodel/community/processor/openai_structured_output"
 )
 
 var (
