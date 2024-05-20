@@ -16,10 +16,6 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-var (
-	GlobalWsConn *websocket.Conn
-)
-
 func NewProcessor() *XunfeiSTTProcessor {
 	return &XunfeiSTTProcessor{
 		MemoryKeyTextQueue:     "text_queue",
