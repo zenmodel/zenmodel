@@ -38,10 +38,8 @@ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81P
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/wk8/go-ordered-map/v2 v2.1.8 h1:5h/BUHu93oj4gIdvHHHGsScSTMijfx5PeYkE/fJgbpc=
 github.com/wk8/go-ordered-map/v2 v2.1.8/go.mod h1:5nJHM5DyteebpVlHnWMV0rPz6Zp7+xBAnxjb1X5vnTw=
-github.com/zenmodel/zenmodel v0.0.0-20240418103454-28beb3a69eb7 h1:hDW2j7Ip3Tx9vaVpoUu8w6t2Zxmsjn/MyaXqqLfEdJE=
-github.com/zenmodel/zenmodel v0.0.0-20240418103454-28beb3a69eb7/go.mod h1:AE1NM5koNsNOZDX4f2mhDM4DetVXTiXOSvhtQy8ig3U=
-github.com/zenmodel/zenmodel/community v0.1.0 h1:0BrbPowUXkhKaV7DHAR6M1qcQbPO2wQ5V3O3VKyDp10=
-github.com/zenmodel/zenmodel/community v0.1.0/go.mod h1:YOBnPbWP61kA+ReZhUMFG+nZdv5Hc2rRSlxS7DPVmkc=
+github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f h1:T6iPxX5xNYnGUGSjzp+O3uaqL8+oflr/dOvhAt83uUc=
+github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f/go.mod h1:AE1NM5koNsNOZDX4f2mhDM4DetVXTiXOSvhtQy8ig3U=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/multierr v1.10.0 h1:S0h4aNzvfcFsC3dRF1jLoaov7oRaKqRGC/pUEJ2yvPQ=
 go.uber.org/multierr v1.10.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=

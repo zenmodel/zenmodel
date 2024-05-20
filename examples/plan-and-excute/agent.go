@@ -6,9 +6,9 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/zenmodel/zenmodel"
-	"github.com/zenmodel/zenmodel-contrib/brain/openai_tool_agent"
-	"github.com/zenmodel/zenmodel-contrib/processor/openaichat"
-	"github.com/zenmodel/zenmodel-contrib/tools"
+	"github.com/zenmodel/zenmodel/community/brain/openai_tool_agent"
+	"github.com/zenmodel/zenmodel/community/processor/openaichat"
+	"github.com/zenmodel/zenmodel/community/tools"
 )
 
 type PastStep struct {

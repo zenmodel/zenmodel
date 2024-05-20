@@ -513,7 +513,7 @@ func main() {
 
 <summary> Nesting: How to Use a Brain as a Neuron within Another Brain </summary>
 
-You can refer to the agent neuron in [plan-and-excute](./examples/plan-and-excute/agent.go), which is a nested brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent)
+You can refer to the agent neuron in [plan-and-excute](./examples/plan-and-excute/agent.go), which is a nested brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent)
 
 You can also refer to the example [nested](./examples/flow-topology/nested/main.go) as follows:
 
@@ -560,10 +560,10 @@ func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
 <details>
 <summary> How to Reuse Other Processors within a Processor </summary>
 
-The [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) community offers many full-featured Processors, or your project's code may have implemented other Processors. Sometimes you need to utilize the functionalities of these Processors, use a combination of multiple Processors, or add extra functionality to existing Processors.
+The [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) community offers many full-featured Processors, or your project's code may have implemented other Processors. Sometimes you need to utilize the functionalities of these Processors, use a combination of multiple Processors, or add extra functionality to existing Processors.
 In these cases, you can reuse other Processors within your current Processor or ProcessFn by simply passing the `BrainRuntime` of your current Processor or ProcessFn as a parameter to the other Processor or ProcessFn.
 
-For example, in the `QAProcess` function of [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go), it reuses the [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel-contrib/blob/main/processor/go_code_tester/processor.go) from the [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) community and adds extra functionality after reusing the Processor.
+For example, in the `QAProcess` function of [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go), it reuses the [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel/community/blob/main/processor/go_code_tester/processor.go) from the [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) community and adds extra functionality after reusing the Processor.
 
 ```go
 func QAProcess(b zenmodel.BrainRuntime) error {
@@ -612,8 +612,8 @@ Multi-agent systems consist of multiple decision-making agents that interact in 
 
 ## 🎉 One More Thing
 
-Here we introduce the [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) repository, a community-driven collection of `Brain` and `Processor` contributions.
-At [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib), every line of code is a testament to ideas and innovation. Go ahead, unleash your creativity, and build your `Brain` like assembling Lego bricks. Also, you can find other members' creative ideas here, expanding the boundaries of your thoughts.
+Here we introduce the [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) repository, a community-driven collection of `Brain` and `Processor` contributions.
+At [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community), every line of code is a testament to ideas and innovation. Go ahead, unleash your creativity, and build your `Brain` like assembling Lego bricks. Also, you can find other members' creative ideas here, expanding the boundaries of your thoughts.
 
 Let's have a look at the current list of resources, awaiting your discovery and innovation:
 
@@ -621,13 +621,13 @@ Let's have a look at the current list of resources, awaiting your discovery and 
 
 | Brain                                                                                      | Introduction                                                |
 | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent) | A chat agent based on the OpenAI model, with tool support and calling |
+| [openai_tool_agent](https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent) | A chat agent based on the OpenAI model, with tool support and calling |
 
 #### Processor
 
 | Processor                                                                                                                         | Introduction                                                 |
 | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [calltools](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/calltools)                                           | A Processor that calls tools, with tool support and calling  |
-| [openaichat](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openaichat)                                         | A chat Processor based on the OpenAI model                   |
-| [openai_structured_output](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openai_structured_output)             | A structured output Processor based on OpenAI Function Calling |
-| [go_code_tester](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/go_code_tester)                                 | A Go unit test runner, often used for testing code generated by LLM |
+| [calltools](https://github.com/zenmodel/zenmodel/community/tree/main/processor/calltools)                                           | A Processor that calls tools, with tool support and calling  |
+| [openaichat](https://github.com/zenmodel/zenmodel/community/tree/main/processor/openaichat)                                         | A chat Processor based on the OpenAI model                   |
+| [openai_structured_output](https://github.com/zenmodel/zenmodel/community/tree/main/processor/openai_structured_output)             | A structured output Processor based on OpenAI Function Calling |
+| [go_code_tester](https://github.com/zenmodel/zenmodel/community/tree/main/processor/go_code_tester)                                 | A Go unit test runner, often used for testing code generated by LLM |

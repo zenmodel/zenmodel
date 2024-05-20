@@ -42,6 +42,6 @@ publications:
   #   url: https://example.com
   paper:
     summary: A chat agent based on the OpenAI model, with tool support and calling.
-    url: https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent
+    url: https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent
   categories: ["tool-use"]
   tags: ["OpenAI", "Tool Use"]

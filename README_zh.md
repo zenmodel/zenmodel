@@ -547,7 +547,7 @@ func main() {
 
 <summary> 嵌套: 如何将 Brain 作为另一个 Brain 的一个 Neuron </summary>
 
-你可以参照 [plan-and-excute](./examples/plan-and-excute/agent.go) 中的 agent neuron, 这个 neuron 就是嵌套的 brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent)
+你可以参照 [plan-and-excute](./examples/plan-and-excute/agent.go) 中的 agent neuron, 这个 neuron 就是嵌套的 brain: [openai_tool_agent](https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent)
 
 也可以参考示例 [nested](./examples/flow-topology/nested/main.go) 如下：
 
@@ -598,10 +598,10 @@ func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
 <details>
 <summary> 如何在 processor 中复用其他 processor </summary>
 
-[zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) 社区有许多功能完备的 Processor， 或者项目的代码中实现了其他的 Processor。有时候需要使用到这些 Processor 的功能，或者使用多个 Processor 的组合，或者需要为已有的 Processor 增加额外功能。
+[zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) 社区有许多功能完备的 Processor， 或者项目的代码中实现了其他的 Processor。有时候需要使用到这些 Processor 的功能，或者使用多个 Processor 的组合，或者需要为已有的 Processor 增加额外功能。
 这些情况你都可以在当前 Processor 或者 ProcessFn 中复用其他的 Processor。只需要将当前 Processor 或者 ProcessFn 的 `BrainRuntime` 作为参数传递给其他 Processor 或者 ProcessFn 即可。
 
-就例如 [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go) 中的 `QAProcess` 函数, 它复用了 [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) 社区 的 [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel-contrib/blob/main/processor/go_code_tester/processor.go)
+就例如 [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go) 中的 `QAProcess` 函数, 它复用了 [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) 社区 的 [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel/community/blob/main/processor/go_code_tester/processor.go)
 并且在复用的 Processor 之后添加了额外的功能。
 
 ```go
@@ -655,9 +655,9 @@ ChatAgent 接收聊天信息列表作为输入，并将新信息输出到此列�
 
 ## 🎉 彩蛋
 
-在此向你介绍 [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib) 仓库，这是一个由社区驱动的 `Brain`
+在此向你介绍 [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) 仓库，这是一个由社区驱动的 `Brain`
 和 `Processor` 贡献合集。
-在 [zenmodel-contrib](https://github.com/zenmodel/zenmodel-contrib)
+在 [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community)
 中，每一行代码都是实现想法和创新的见证。来吧，尽情发挥你的创造力，像拼接乐高积木一样构建你的 `Brain`
 。同时，你还可以在这里找到其他成员的创想，开拓你的思维边界。
 
@@ -667,16 +667,16 @@ ChatAgent 接收聊天信息列表作为输入，并将新信息输出到此列�
 
 | Brain                                         | 简介                                   |
 |-----------------------------------------------|--------------------------------------|
-| [openai_tool_agent](https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent) | 基于 OpenAI 模型的聊天代理，支持配置 Tool 并调用 Tool |
+| [openai_tool_agent](https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent) | 基于 OpenAI 模型的聊天代理，支持配置 Tool 并调用 Tool |
 
 
 #### Processor
 
 | Processor                                                                                                             | 简介                                         |
 |-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| [calltools](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/calltools)                               | 调用工具的 Processor，支持配置 Tool 并调用 Tool         |
-| [openaichat](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openaichat)                             | 基于 OpenAI 模型的聊天 Processor                  |
-| [openai_structured_output](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openai_structured_output) | 基于 OpenAI Function Calling 的结构化输出 Processor |
-| [go_code_tester](https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/go_code_tester)        | Go 单元测试执行器，通常用于测试 LLM 生成的代码    |
+| [calltools](https://github.com/zenmodel/zenmodel/community/tree/main/processor/calltools)                               | 调用工具的 Processor，支持配置 Tool 并调用 Tool         |
+| [openaichat](https://github.com/zenmodel/zenmodel/community/tree/main/processor/openaichat)                             | 基于 OpenAI 模型的聊天 Processor                  |
+| [openai_structured_output](https://github.com/zenmodel/zenmodel/community/tree/main/processor/openai_structured_output) | 基于 OpenAI Function Calling 的结构化输出 Processor |
+| [go_code_tester](https://github.com/zenmodel/zenmodel/community/tree/main/processor/go_code_tester)        | Go 单元测试执行器，通常用于测试 LLM 生成的代码    |
 
 

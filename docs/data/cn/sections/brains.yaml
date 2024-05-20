@@ -42,6 +42,6 @@ publications:
   #   url: https://example.com
   paper:
     summary: 基于 OpenAI 模型的聊天代理，支持配置 Tool 并调用 Tool
-    url: https://github.com/zenmodel/zenmodel-contrib/tree/main/brain/openai_tool_agent
+    url: https://github.com/zenmodel/zenmodel/community/tree/main/brain/openai_tool_agent
   categories: ["tool-use"]
   tags: ["OpenAI", "Tool Use"]

@@ -32,7 +32,7 @@ projects:
   logo: /images/sections/projects/openai.png
   role: zenmodel
   timeline: alpha
-  repo: https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openaichat
+  repo: https://github.com/zenmodel/zenmodel/community/tree/main/processor/openaichat
   #url: ""  # If your project is not a public repo but it has a website or any external details url then provide it here. don't provide "repo" and "url" simultaneously.
   summary: 基于 OpenAI 模型的聊天 Processor
   tags: ["chat", "openai"]
@@ -41,7 +41,7 @@ projects:
   logo: /images/sections/projects/call-tools.png
   role: zenmodel
   timeline: alpha
-  repo: https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/calltools
+  repo: https://github.com/zenmodel/zenmodel/community/tree/main/processor/calltools
   #url: ""
   summary: 调用工具的 Processor，支持配置 Tool 并调用 Tool
   tags: ["tool"]
@@ -50,7 +50,7 @@ projects:
   role: zenmodel
   logo: /images/sections/projects/openai.png
   timeline: alpha
-  repo: https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/openai_structured_output
+  repo: https://github.com/zenmodel/zenmodel/community/tree/main/processor/openai_structured_output
   summary: 基于 OpenAI Function Calling 的结构化输出 Processor
   tags: ["tool","openai"]
 
@@ -58,7 +58,7 @@ projects:
   logo: /images/sections/projects/golang.png
   role: zenmodel
   timeline: alpha
-  repo: https://github.com/zenmodel/zenmodel-contrib/tree/main/processor/go_code_tester
+  repo: https://github.com/zenmodel/zenmodel/community/tree/main/processor/go_code_tester
   #url: ""
   summary: Go 单元测试执行器，通常用于测试 LLM 生成的代码
   tags: ["tool", "golang", "code"]
