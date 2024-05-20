@@ -6,8 +6,10 @@ require (
 	github.com/invopop/jsonschema v0.12.0
 	github.com/sashabaranov/go-openai v1.21.0
 	github.com/serpapi/google-search-results-golang v0.0.0-20240325113416-ec93f510648e
+	github.com/veandco/go-sdl2 v0.4.38
 	github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f
 	go.uber.org/zap v1.27.0
+	golang.org/x/net v0.19.0
 )
 
 require (
