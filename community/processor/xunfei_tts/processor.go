@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func NewProcessor() *XunfeiTTSProcessor {
@@ -47,7 +47,7 @@ type appConfig struct {
 	apiSecret string
 }
 
-func (p *XunfeiTTSProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *XunfeiTTSProcessor) Process(brain processor.BrainContext) error {
 	if !brain.ExistMemory(p.MemoryKeyTextToSpeech) {
 		// TODO log no need to process
 		return nil
@@ -76,7 +76,7 @@ func (p *XunfeiTTSProcessor) Process(brain zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func (p *XunfeiTTSProcessor) DeepCopy() zenmodel.Processor {
+func (p *XunfeiTTSProcessor) Clone() processor.Processor {
 	return &XunfeiTTSProcessor{
 		MemoryKeyTextToSpeech: p.MemoryKeyTextToSpeech,
 		appCfg: appConfig{
@@ -87,12 +87,12 @@ func (p *XunfeiTTSProcessor) DeepCopy() zenmodel.Processor {
 	}
 }
 
-func (p *XunfeiTTSProcessor) WithMemoryKeyTextToSpeech(memoryKeyTextToSpeech string) zenmodel.Processor {
+func (p *XunfeiTTSProcessor) WithMemoryKeyTextToSpeech(memoryKeyTextToSpeech string) processor.Processor {
 	p.MemoryKeyTextToSpeech = memoryKeyTextToSpeech
 	return p
 }
 
-func (p *XunfeiTTSProcessor) WithAppConfig(appID, apiKey, apiSecret string) zenmodel.Processor {
+func (p *XunfeiTTSProcessor) WithAppConfig(appID, apiKey, apiSecret string) processor.Processor {
 	p.appCfg.appID = appID
 	p.appCfg.apiKey = apiKey
 	p.appCfg.apiSecret = apiSecret

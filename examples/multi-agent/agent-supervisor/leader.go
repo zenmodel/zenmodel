@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/community/processor/go_code_tester"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	memKeyDecision = "decision"
 )
 
-func LeaderProcess(b zenmodel.BrainRuntime) error {
+func LeaderProcess(b processor.BrainContext) error {
 	// if it has no task, disassemble task from demand
 	if !b.ExistMemory(memKeyTask) {
 		task := rephraseTaskFromDemand(b.GetMemory(memKeyDemand).(string))
@@ -26,9 +26,9 @@ func LeaderProcess(b zenmodel.BrainRuntime) error {
 		return nil
 	}
 	switch b.GetMemory(memKeyFeedback).(string) {
-	case NeuronRD: // feedback from RD
+	case FeedBackRD: // feedback from RD
 		_ = b.SetMemory(memKeyDecision, DecisionQA) // pass to QA
-	case NeuronQA: // feedback from QA
+	case FeedBackQA: // feedback from QA
 		ok := readTestReport(b.GetMemory(memKeyGoTestResult).(string))
 		if !ok {
 			// test result not ok, resend to RD
@@ -57,7 +57,7 @@ func readTestReport(testResult string) bool {
 	return !strings.Contains(testResult, "FAIL")
 }
 
-func genResponse(b zenmodel.BrainRuntime) string {
+func genResponse(b processor.BrainContextReader) string {
 	codes := b.GetMemory(memKeyCodes).(*go_code_tester.Codes).String()
 	testReport := b.GetMemory(memKeyGoTestResult).(string)
 

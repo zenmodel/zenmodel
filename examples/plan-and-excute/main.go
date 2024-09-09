@@ -4,13 +4,11 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 const (
-	neuronPlanner   = "planner"
-	neuronAgent     = "agent"
-	neuronRePlanner = "replanner"
-
 	memKeyObjective = "objective"
 	memKeyPlan      = "plan"
 	memKeyPastSteps = "past_steps"
@@ -18,34 +16,35 @@ const (
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
+	bp := zenmodel.NewBlueprint()
 
 	// add planner neuron
 	pp, _ := PlannerProcessor()
-	bp.AddNeuronWithProcessor(neuronPlanner, pp)
+	neuronPlanner := bp.AddNeuronWithProcessor(pp)
 
 	// add tool agent neuron
-	bp.AddNeuron(neuronAgent, toolAgentProcess)
+	neuronAgent := bp.AddNeuron(toolAgentProcess)
 
 	// add replanner neuron
 	rpp, _ := RePlannerProcessor()
-	bp.AddNeuronWithProcessor(neuronRePlanner, rpp)
+	neuronRePlanner := bp.AddNeuronWithProcessor(rpp)
 
 	// add link
-	_, _ = bp.AddEntryLink(neuronPlanner)
+	_, _ = bp.AddEntryLinkTo(neuronPlanner)
 	_, _ = bp.AddLink(neuronPlanner, neuronAgent)
 	_, _ = bp.AddLink(neuronAgent, neuronRePlanner)
 	continueLink, _ := bp.AddLink(neuronRePlanner, neuronAgent)
-	endLink, _ := bp.AddEndLink(neuronRePlanner)
+	endLink, _ := bp.AddEndLinkFrom(neuronRePlanner)
 
 	// add link to cast group of a neuron
-	_ = bp.AddLinkToCastGroup(neuronRePlanner, "continue", continueLink)
-	_ = bp.AddLinkToCastGroup(neuronRePlanner, "end", endLink)
+	_ = neuronPlanner.AddCastGroup("continue", continueLink)
+	_ = neuronPlanner.AddCastGroup("end", endLink)
+
 	// bind cast group select function for neuron
-	_ = bp.BindCastGroupSelectFunc(neuronRePlanner, replanerNext)
+	neuronPlanner.BindCastGroupSelectFunc(replanerNext)
 
 	// build brain
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(memKeyObjective, "what is the hometown of the 2024 Australia open winner?")
 	// block process util brain sleeping
@@ -70,7 +69,7 @@ func main() {
 	*/
 }
 
-func replanerNext(b zenmodel.BrainRuntime) string {
+func replanerNext(b processor.BrainContextReader) string {
 	// if we got response, turn end
 	if b.ExistMemory(memKeyResponse) {
 		return "end"

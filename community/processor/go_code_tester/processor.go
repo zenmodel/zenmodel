@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/community/common/log"
+	"github.com/zenmodel/zenmodel/processor"
 	"go.uber.org/zap"
 )
 
@@ -70,7 +70,7 @@ func (p *GoCodeTestProcessor) WithTestCodeKeep(keep bool) *GoCodeTestProcessor {
 	return p
 }
 
-func (p *GoCodeTestProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *GoCodeTestProcessor) Process(brain processor.BrainContext) error {
 	p.logger.Info("go code test processor start processing")
 
 	codes, ok := brain.GetMemory(memKeyCodes).(*Codes)
@@ -105,7 +105,7 @@ func (p *GoCodeTestProcessor) Process(brain zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func (p *GoCodeTestProcessor) DeepCopy() zenmodel.Processor {
+func (p *GoCodeTestProcessor) Clone() processor.Processor {
 	testFlagCopy := make([]string, len(p.testFlag))
 	if p.testFlag != nil {
 		copy(testFlagCopy, p.testFlag)

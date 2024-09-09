@@ -4,41 +4,43 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
-	bp.AddNeuron("condition", func(runtime zenmodel.BrainRuntime) error {
+	bp := zenmodel.NewBlueprint()
+	condition := bp.AddNeuron(func(bc processor.BrainContext) error {
 		return nil // do nothing
 	})
-	bp.AddNeuron("cell-phone", func(runtime zenmodel.BrainRuntime) error {
+	cellPhone := bp.AddNeuron(func(bc processor.BrainContext) error {
 		fmt.Printf("Run here: Cell Phone\n")
 		return nil
 	})
-	bp.AddNeuron("laptop", func(runtime zenmodel.BrainRuntime) error {
+	laptop := bp.AddNeuron(func(bc processor.BrainContext) error {
 		fmt.Printf("Run here: Laptop\n")
 		return nil
 	})
-	bp.AddNeuron("ps5", func(runtime zenmodel.BrainRuntime) error {
+	ps5 := bp.AddNeuron(func(bc processor.BrainContext) error {
 		fmt.Printf("Run here: PS5\n")
 		return nil
 	})
-	bp.AddNeuron("tv", func(runtime zenmodel.BrainRuntime) error {
+	tv := bp.AddNeuron(func(bc processor.BrainContext) error {
 		fmt.Printf("Run here: TV\n")
 		return nil
 	})
-	bp.AddNeuron("printer", func(runtime zenmodel.BrainRuntime) error {
+	printer := bp.AddNeuron(func(bc processor.BrainContext) error {
 		fmt.Printf("Run here: Printer\n")
 		return nil
 	})
 
-	cellPhone, _ := bp.AddLink("condition", "cell-phone")
-	laptop, _ := bp.AddLink("condition", "laptop")
-	ps5, _ := bp.AddLink("condition", "ps5")
-	tv, _ := bp.AddLink("condition", "tv")
-	printer, _ := bp.AddLink("condition", "printer")
+	cellPhoneLink, _ := bp.AddLink(condition, cellPhone)
+	laptopLink, _ := bp.AddLink(condition, laptop)
+	ps5Link, _ := bp.AddLink(condition, ps5)
+	tvLink, _ := bp.AddLink(condition, tv)
+	printerLink, _ := bp.AddLink(condition, printer)
 	// add entry link
-	_, _ = bp.AddEntryLink("condition")
+	_, _ = bp.AddEntryLinkTo(condition)
 
 	/*
 	   Category 1: Electronics
@@ -56,20 +58,19 @@ func main() {
 	   - Printer
 	   - Cell Phone
 	*/
-	_ = bp.AddLinkToCastGroup("condition", "electronics",
-		cellPhone, laptop, ps5)
-	_ = bp.AddLinkToCastGroup("condition",
-		"entertainment-devices",
-		cellPhone, ps5, tv)
-	_ = bp.AddLinkToCastGroup(
-		"condition", "office-devices",
-		laptop, printer, cellPhone)
 
-	_ = bp.BindCastGroupSelectFunc("condition", func(brain zenmodel.BrainRuntime) string {
-		return brain.GetMemory("category").(string)
+	_ = condition.AddCastGroup("electronics",
+		cellPhoneLink, laptopLink, ps5Link)
+	_ = condition.AddCastGroup("entertainment-devices",
+		cellPhoneLink, ps5Link, tvLink)
+	_ = condition.AddCastGroup("office-devices",
+		laptopLink, printerLink, cellPhoneLink)
+
+	condition.BindCastGroupSelectFunc(func(bcr processor.BrainContextReader) string {
+		return bcr.GetMemory("category").(string)
 	})
 
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 
 	_ = brain.EntryWithMemory("category", "electronics")
 	//_ = brain.EntryWithMemory("category", "entertainment-devices")

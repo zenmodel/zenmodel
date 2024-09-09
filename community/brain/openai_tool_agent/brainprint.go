@@ -3,10 +3,12 @@ package openai_tool_agent
 import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
-func CloneBrainprint(config Config) (*zenmodel.Brainprint, error) {
-	bp := zenmodel.NewBrainPrint()
+func CloneBrainprint(config Config) (brain.Blueprint, error) {
+	bp := zenmodel.NewBlueprint()
 
 	chatProcessor, err := config.newChatProcessor()
 	if err != nil {
@@ -18,46 +20,45 @@ func CloneBrainprint(config Config) (*zenmodel.Brainprint, error) {
 	}
 
 	// add neuron
-	bp.AddNeuronWithProcessor("llm", chatProcessor)
-	bp.AddNeuronWithProcessor("action", callToolsProcessor)
+	llm := bp.AddNeuronWithProcessor(chatProcessor)
+	action := bp.AddNeuronWithProcessor(callToolsProcessor)
 
 	// add entry link
-	_, err = bp.AddEntryLink("llm")
+	_, err = bp.AddEntryLinkTo(llm)
 	if err != nil {
 		return nil, err
 	}
 	// add link
-	continueLink, err := bp.AddLink("llm", "action")
+	continueLink, err := bp.AddLink(llm, action)
 	if err != nil {
 		return nil, err
 	}
-	_, err = bp.AddLink("action", "llm")
+	_, err = bp.AddLink(action, llm)
 	if err != nil {
 		return nil, err
 	}
 
 	// add end link
-	endLink, err := bp.AddEndLink("llm")
+	endLink, err := bp.AddEndLinkFrom(llm)
 	if err != nil {
 		return nil, err
 	}
 
 	// add link to cast group of a neuron
-	if err = bp.AddLinkToCastGroup("llm", "continue", continueLink); err != nil {
+	if err = llm.AddCastGroup("continue", continueLink); err != nil {
 		return nil, err
 	}
-	if err = bp.AddLinkToCastGroup("llm", "end", endLink); err != nil {
+	if err = llm.AddCastGroup("end", endLink); err != nil {
 		return nil, err
 	}
+
 	// bind cast group select function for neuron
-	if err = bp.BindCastGroupSelectFunc("llm", llmNext); err != nil {
-		return nil, err
-	}
+	llm.BindCastGroupSelectFunc(llmNext)
 
 	return bp, nil
 }
 
-func llmNext(b zenmodel.BrainRuntime) string {
+func llmNext(b processor.BrainContextReader) string {
 	if !b.ExistMemory("messages") {
 		return "end"
 	}

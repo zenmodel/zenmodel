@@ -13,8 +13,8 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/community/common/log"
+	"github.com/zenmodel/zenmodel/processor"
 	"go.uber.org/zap"
 )
 
@@ -49,7 +49,7 @@ type OpenAIStructuredOutputProcessor struct { // nolint
 	logger *zap.Logger
 }
 
-func (p *OpenAIStructuredOutputProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *OpenAIStructuredOutputProcessor) Process(brain processor.BrainContext) error {
 	p.logger.Info("openAI structured output processor start processing")
 
 	if err := p.renderPrompt(brain); err != nil {
@@ -81,7 +81,7 @@ func (p *OpenAIStructuredOutputProcessor) Process(brain zenmodel.BrainRuntime) e
 	return nil
 }
 
-func (p *OpenAIStructuredOutputProcessor) DeepCopy() zenmodel.Processor {
+func (p *OpenAIStructuredOutputProcessor) Clone() processor.Processor {
 	// variables value copy
 	variablesCopy := make([]string, len(p.variables))
 	if p.variables != nil {
@@ -178,7 +178,7 @@ func (p *OpenAIStructuredOutputProcessor) WithClient(client *openai.Client) *Ope
 	return p
 }
 
-func (p *OpenAIStructuredOutputProcessor) renderPrompt(brain zenmodel.BrainRuntime) error {
+func (p *OpenAIStructuredOutputProcessor) renderPrompt(brain processor.BrainContext) error {
 	values := make(map[string]string)
 	for _, varName := range p.variables {
 		values[varName] = fmt.Sprintf("%s", brain.GetMemory(varName))
@@ -241,7 +241,7 @@ func (p *OpenAIStructuredOutputProcessor) chatCompletion(ctx context.Context) er
 	return nil
 }
 
-func (p *OpenAIStructuredOutputProcessor) structureOutput(brain zenmodel.BrainRuntime) error {
+func (p *OpenAIStructuredOutputProcessor) structureOutput(brain processor.BrainContext) error {
 	if len(p.respMsg.ToolCalls) == 0 {
 		return nil
 	}

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/processor"
 	"golang.org/x/net/websocket"
 )
 
-func (p *XunfeiSTTProcessor) receive(readChan chan int, brain zenmodel.BrainRuntime) {
+func (p *XunfeiSTTProcessor) receive(readChan chan int, brain processor.BrainContext) {
 	for {
 		var msg []byte
 		var result map[string]string

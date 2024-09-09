@@ -2,16 +2,11 @@ package errors
 
 import (
 	"github.com/pkg/errors"
-	"github.com/zenmodel/zenmodel/internal/constants"
 )
 
 var (
-	ErrTryProcessLater = errors.New("try process message later")
-
-	errNeuronNotFound           = errors.New("neuron not found")
-	errLinkNotFound             = errors.New("link not found")
-	errUnsupportedMessageKind   = errors.New("unsupported message kind")
-	errUnsupportedMessageAction = errors.New("unsupported message action")
+	errNeuronNotFound = errors.New("neuron not found")
+	errLinkNotFound   = errors.New("link not found")
 )
 
 func Wrapf(err error, format string, args ...interface{}) error {
@@ -26,14 +21,10 @@ func ErrLinkNotFound(linkID string) error {
 	return errors.Wrapf(errLinkNotFound, "link: %s", linkID)
 }
 
-func ErrUnsupportedMessageKind(messageKind constants.MessageKind) error {
-	return errors.Wrapf(errUnsupportedMessageKind, "kind: %s", messageKind)
+func ErrInLinkNotFound(linkID, neuronID string) error {
+	return errors.Wrapf(errLinkNotFound, "in-link %s of neuron %s", linkID, neuronID)
 }
 
-func ErrUnsupportedMessageAction(messageAction constants.MessageAction) error {
-	return errors.Wrapf(errUnsupportedMessageAction, "action: %s", messageAction)
-}
-
-func ErrorIsTryProcessLater(err error) bool {
-	return errors.Is(err, ErrTryProcessLater)
+func ErrOutLinkNotFound(linkID, neuronID string) error {
+	return errors.Wrapf(errLinkNotFound, "out-link %s of neuron %s", linkID, neuronID)
 }

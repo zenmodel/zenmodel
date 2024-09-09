@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel/community/tools"
+	"github.com/zenmodel/zenmodel/processor"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ type CallToolsProcessor struct { // nolint
 	logger *zap.Logger
 }
 
-func (p *CallToolsProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *CallToolsProcessor) Process(brain processor.BrainContext) error {
 	p.logger.Info("call tools from openAI chat processor start processing")
 
 	v := brain.GetMemory(p.memoryKeyMessages)
@@ -65,7 +65,7 @@ func (p *CallToolsProcessor) Process(brain zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func (p *CallToolsProcessor) DeepCopy() zenmodel.Processor {
+func (p *CallToolsProcessor) Clone() processor.Processor {
 	callFuncMap := make(map[string]tools.CallFunction)
 	for name, callFunc := range p.callFuncMap {
 		callFuncMap[name] = callFunc
@@ -78,17 +78,17 @@ func (p *CallToolsProcessor) DeepCopy() zenmodel.Processor {
 	}
 }
 
-func (p *CallToolsProcessor) WithLogger(logger *zap.Logger) zenmodel.Processor {
+func (p *CallToolsProcessor) WithLogger(logger *zap.Logger) processor.Processor {
 	p.logger = logger
 	return p
 }
 
-func (p *CallToolsProcessor) WithMemoryKeyMessages(memoryKeyMessages string) zenmodel.Processor {
+func (p *CallToolsProcessor) WithMemoryKeyMessages(memoryKeyMessages string) processor.Processor {
 	p.memoryKeyMessages = memoryKeyMessages
 	return p
 }
 
-func (p *CallToolsProcessor) WithToolCallDefinitions(toolCallDefinitions []tools.ToolCallDefinition) zenmodel.Processor {
+func (p *CallToolsProcessor) WithToolCallDefinitions(toolCallDefinitions []tools.ToolCallDefinition) processor.Processor {
 	callFuncMap := make(map[string]tools.CallFunction)
 	for _, definition := range toolCallDefinitions {
 		callFuncMap[definition.Function.Name] = definition.CallFunc

@@ -4,31 +4,33 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel"
-)
-
-var (
-	entryInput, entryPoetry, entryJoke string
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
-	bp.AddNeuron("input", inputFn)
-	bp.AddNeuron("poetry-template", poetryFn)
-	bp.AddNeuron("joke-template", jokeFn)
-	bp.AddNeuron("generate", genFn)
+	bp := zenmodel.NewBlueprint()
 
-	inputIn, _ := bp.AddLink("input", "generate")
-	poetryIn, _ := bp.AddLink("poetry-template", "generate")
-	jokeIn, _ := bp.AddLink("joke-template", "generate")
+	input := bp.AddNeuron(inputFn)
+	poetryTemplate := bp.AddNeuron(poetryFn)
+	jokeTemplate := bp.AddNeuron(jokeFn)
+	generate := bp.AddNeuron(genFn)
 
-	entryInput, _ = bp.AddEntryLink("input")
-	entryPoetry, _ = bp.AddEntryLink("poetry-template")
-	entryJoke, _ = bp.AddEntryLink("joke-template")
+	inputIn, _ := bp.AddLink(input, generate)
+	poetryIn, _ := bp.AddLink(poetryTemplate, generate)
+	jokeIn, _ := bp.AddLink(jokeTemplate, generate)
 
-	_ = bp.AddTriggerGroup("generate", inputIn, poetryIn)
-	_ = bp.AddTriggerGroup("generate", inputIn, jokeIn)
+	entryInput, _ := bp.AddEntryLinkTo(input)
+	entryPoetry, _ := bp.AddEntryLinkTo(poetryTemplate)
+	entryJoke, _ := bp.AddEntryLinkTo(jokeTemplate)
+	entryInput.GetID()
+	entryPoetry.GetID()
+	entryJoke.GetID()
 
-	brain := bp.Build()
+	_ = generate.AddTriggerGroup(inputIn, poetryIn)
+	_ = generate.AddTriggerGroup(inputIn, jokeIn)
+
+	brain := brainlocal.NewBrainLocal(bp)
 
 	// case 1: entry poetry and input
 	// expect: generate poetry
@@ -57,22 +59,22 @@ func main() {
 	brain.Wait()
 }
 
-func inputFn(b zenmodel.BrainRuntime) error {
+func inputFn(b processor.BrainContext) error {
 	_ = b.SetMemory("input", "orange")
 	return nil
 }
 
-func poetryFn(b zenmodel.BrainRuntime) error {
+func poetryFn(b processor.BrainContext) error {
 	_ = b.SetMemory("template", "poetry")
 	return nil
 }
 
-func jokeFn(b zenmodel.BrainRuntime) error {
+func jokeFn(b processor.BrainContext) error {
 	_ = b.SetMemory("template", "joke")
 	return nil
 }
 
-func genFn(b zenmodel.BrainRuntime) error {
+func genFn(b processor.BrainContext) error {
 	input := b.GetMemory("input").(string)
 	tpl := b.GetMemory("template").(string)
 	fmt.Printf("Generating %s for %s\n", tpl, input)

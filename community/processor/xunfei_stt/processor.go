@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/processor"
 	"golang.org/x/net/websocket"
 )
 
@@ -40,7 +40,7 @@ type appConfig struct {
 	appKey string
 }
 
-func (p *XunfeiSTTProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *XunfeiSTTProcessor) Process(brain processor.BrainContext) error {
 	if err := p.wsConnect(); err != nil {
 		return fmt.Errorf("ws connect error:%v\n", err)
 	}
@@ -65,7 +65,7 @@ func (p *XunfeiSTTProcessor) Process(brain zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func (p *XunfeiSTTProcessor) DeepCopy() zenmodel.Processor {
+func (p *XunfeiSTTProcessor) Clone() processor.Processor {
 	return &XunfeiSTTProcessor{
 		MemoryKeyTextQueue: p.MemoryKeyTextQueue,
 		appCfg: appConfig{
@@ -75,12 +75,12 @@ func (p *XunfeiSTTProcessor) DeepCopy() zenmodel.Processor {
 	}
 }
 
-func (p *XunfeiSTTProcessor) WithMemoryKeyTextQueue(memKeyTextQueue string) zenmodel.Processor {
+func (p *XunfeiSTTProcessor) WithMemoryKeyTextQueue(memKeyTextQueue string) processor.Processor {
 	p.MemoryKeyTextQueue = memKeyTextQueue
 	return p
 }
 
-func (p *XunfeiSTTProcessor) WithAppConfig(appID, appKey string) zenmodel.Processor {
+func (p *XunfeiSTTProcessor) WithAppConfig(appID, appKey string) processor.Processor {
 	p.appCfg.appID = appID
 	p.appCfg.appKey = appKey
 	return p
@@ -120,7 +120,7 @@ func wsHandShake(conn *websocket.Conn) error {
 	return nil
 }
 
-func (p *XunfeiSTTProcessor) ensureTextQueue(brain zenmodel.BrainRuntime) error {
+func (p *XunfeiSTTProcessor) ensureTextQueue(brain processor.BrainContext) error {
 	if !brain.ExistMemory(p.MemoryKeyTextQueue) {
 		q := make(chan string, p.MemoryKeyTextQueueSize)
 		if err := brain.SetMemory(p.MemoryKeyTextQueue, q); err != nil {
