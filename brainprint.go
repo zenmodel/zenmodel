@@ -1,281 +1,105 @@
 package zenmodel
 
 import (
-	"fmt"
-	"time"
-
+	"github.com/rs/zerolog"
+	"github.com/zenmodel/zenmodel/brain"
 	"github.com/zenmodel/zenmodel/internal/errors"
-	"go.uber.org/zap/zapcore"
+	"github.com/zenmodel/zenmodel/internal/utils"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
-// Brainprint is short of BrainLocal Blueprint
-type Brainprint struct {
-	// map of all neuron
-	neurons map[string]*Neuron
-	// map of all link
-	links map[string]*Link
-	// timeout for the brain, default is no timeout
-	// if set, the brain will sleep after the timeout
-	timeout *time.Duration
-}
-
-type BrainState string
-
-func NewBrainPrint() *Brainprint {
-	return &Brainprint{
-		neurons: make(map[string]*Neuron),
-		links:   make(map[string]*Link),
+// NewBlueprint new blueprint
+func NewBlueprint() brain.Blueprint {
+	return &brainprint{
+		id:      utils.GenID(),
+		labels:  make(map[string]string),
+		neurons: make(map[string]*neuron),
+		links:   make(map[string]*link),
 	}
 }
 
-func (b *Brainprint) Clone() *Brainprint {
-	return b.deepCopy()
+// brainprint is implement Brainprint
+type brainprint struct {
+	// 标识，拷贝的brainprint ID 也相同
+	id string
+	// labels
+	labels map[string]string
+	// map of all neuron
+	neurons map[string]*neuron
+	// map of all link
+	links map[string]*link
 }
 
-func (b *Brainprint) deepCopy() *Brainprint {
-	if b == nil {
+func (b *brainprint) GetID() string {
+	return b.id
+}
+
+func (b *brainprint) GetLabels() map[string]string {
+	return b.labels
+}
+
+func (b *brainprint) SetLabels(labels map[string]string) {
+	b.labels = labels
+}
+
+func (b *brainprint) GetNeuron(neuronID string) (brain.Neuron, error) {
+	n, ok := b.neurons[neuronID]
+	if !ok {
+		return nil, errors.ErrNeuronNotFound(neuronID)
+	}
+	return n, nil
+}
+
+func (b *brainprint) HasNeuron(neuronID string) bool {
+	_, ok := b.neurons[neuronID]
+	return ok
+}
+
+func (b *brainprint) ListNeurons() []brain.Neuron {
+	if len(b.neurons) == 0 {
 		return nil
 	}
-	cp := &Brainprint{
-		neurons: make(map[string]*Neuron),
-		links:   make(map[string]*Link),
+	neurons := make([]brain.Neuron, 0, len(b.neurons))
+	for _, n := range b.neurons {
+		neurons = append(neurons, n)
 	}
-	if b.timeout != nil {
-		timeout := *b.timeout
-		cp.timeout = &timeout
-	}
-	for id, neuron := range b.neurons {
-		cp.neurons[id] = neuron.deepCopy()
-	}
-	for id, link := range b.links {
-		cp.links[id] = link.deepCopy()
-	}
-	return cp
+	return neurons
 }
 
-// AddNeuron add a neuron with process function to the brain,
-// if neuron already exist in brain, process function will be overwritten
-func (b *Brainprint) AddNeuron(neuronID string, processFn func(runtime BrainRuntime) error, withOpts ...NeuronOption) {
-	b.addNeuronWithProcessor(neuronID, &DefaultProcessor{processFn: processFn}, withOpts...)
+func (b *brainprint) GetSrcNeuron(linkID string) (brain.Neuron, error) {
+	l, err := b.GetLink(linkID)
+	if err != nil {
+		return nil, err
+	}
 
-	return
+	return b.GetNeuron(l.GetSrcNeuronID())
 }
 
-// AddNeuronWithProcessor add a neuron with processor to the brain,
-// if neuron already exist in brain, processor will be overwritten
-func (b *Brainprint) AddNeuronWithProcessor(neuronID string, processor Processor, withOpts ...NeuronOption) {
-	b.addNeuronWithProcessor(neuronID, processor, withOpts...)
+func (b *brainprint) GetDestNeuron(linkID string) (brain.Neuron, error) {
+	l, err := b.GetLink(linkID)
+	if err != nil {
+		return nil, err
+	}
 
-	return
+	return b.GetNeuron(l.GetDestNeuronID())
 }
 
-// addNeuronWithProcessor add a neuron with processor to the brain,
-// if neuron already exist in brain, processor will be overwritten
-func (b *Brainprint) addNeuronWithProcessor(neuronID string, processor Processor, withOpts ...NeuronOption) {
-	neuron := b.getNeuron(neuronID)
-	if neuron == nil {
-		neuron = newNeuron(neuronID)
+func (b *brainprint) GetLink(linkID string) (brain.Link, error) {
+	l, ok := b.links[linkID]
+	if !ok {
+		return nil, errors.ErrLinkNotFound(linkID)
 	}
-	neuron.bindProcessor(processor)
-	for _, opt := range withOpts {
-		opt.apply(neuron)
-	}
-	b.neurons[neuron.id] = neuron
-
-	return
+	return l, nil
 }
 
-func (b *Brainprint) getNeuron(id string) *Neuron {
-	return b.neurons[id]
+func (b *brainprint) HasLink(linkID string) bool {
+	_, ok := b.links[linkID]
+	return ok
 }
 
-func (b *Brainprint) AddLink(fromID, toID string) (string, error) {
-	// check neuron exist in brain
-	if fromID == EndNeuronID {
-		return "", fmt.Errorf("END neuron cannot cast to any neuron")
-	}
-	if toID == EndNeuronID {
-		b.ensureEndNeuron()
-	}
-	from := b.getNeuron(fromID)
-	if from == nil {
-		return "", errors.ErrNeuronNotFound(fromID)
-	}
-	to := b.getNeuron(toID)
-	if to == nil {
-		return "", errors.ErrNeuronNotFound(toID)
-	}
-
-	link := newLink(from, to)
-
-	if err := to.addTriggerGroup(link); err != nil {
-		// rollback, do nothing
-
-		// error
-		return "", errors.Wrapf(err, "add trigger group with link error")
-	}
-	if err := from.addLinkToDefaultCastGroup(link); err != nil {
-		// rollback
-		to.deleteTriggerGroup(link)
-		// error
-		return "", errors.Wrapf(err, "add link to default cast group error")
-	}
-	b.links[link.id] = link
-
-	return link.id, nil
-}
-
-func (b *Brainprint) getLink(id string) *Link {
-	return b.links[id]
-}
-
-func (b *Brainprint) AddEntryLink(toID string) (string, error) {
-	to := b.getNeuron(toID)
-	if to == nil {
-		return "", errors.ErrNeuronNotFound(toID)
-	}
-
-	link := newEntryLink(to)
-
-	if err := to.addTriggerGroup(link); err != nil {
-		// rollback, do nothing
-
-		// error
-		return "", errors.Wrapf(err, "add trigger group with link error")
-	}
-
-	b.links[link.id] = link
-
-	return link.id, nil
-}
-
-// AddEndLink add link from specific neuron to END neuron, if END neuron not exist, create it.
-func (b *Brainprint) AddEndLink(fromID string) (string, error) {
-	b.ensureEndNeuron()
-	end := b.getNeuron(EndNeuronID)
-	from := b.getNeuron(fromID)
-	if from == nil {
-		return "", errors.ErrNeuronNotFound(fromID)
-	}
-
-	link := newLink(from, end)
-
-	if err := end.addTriggerGroup(link); err != nil {
-		// rollback, do nothing
-
-		// error
-		return "", errors.Wrapf(err, "add trigger group with link error")
-	}
-	if err := from.addLinkToDefaultCastGroup(link); err != nil {
-		// rollback
-		end.deleteTriggerGroup(link)
-		// error
-		return "", errors.Wrapf(err, "add link to default cast group error")
-	}
-
-	b.links[link.id] = link
-
-	return link.id, nil
-}
-
-// AddLinkToCastGroup add links to specific named cast group.
-// if group not exist, create the group. Groups that allow empty links.
-// The specified link will remove from the default group, if it originally belonged to the default group.
-func (b *Brainprint) AddLinkToCastGroup(neuronID string, groupName string, linkIDs ...string) error {
-	neu := b.getNeuron(neuronID)
-	if neu == nil {
-		return errors.ErrNeuronNotFound(neuronID)
-	}
-
-	links := make([]*Link, 0)
-	for _, id := range linkIDs {
-		link := b.getLink(id)
-		if link == nil {
-			return errors.ErrLinkNotFound(id)
-		}
-		links = append(links, link)
-	}
-
-	return neu.addLinkToCastGroup(groupName, links...)
-}
-
-// DeleteCastGroup ...
-func (b *Brainprint) DeleteCastGroup(neuronID string, groupName string) error {
-	neu := b.getNeuron(neuronID)
-	if neu == nil {
-		return errors.ErrNeuronNotFound(neuronID)
-	}
-
-	return neu.deleteCastGroup(groupName)
-}
-
-// AddTriggerGroup ...
-func (b *Brainprint) AddTriggerGroup(neuronID string, linkIDs ...string) error {
-	neu := b.getNeuron(neuronID)
-	if neu == nil {
-		return errors.ErrNeuronNotFound(neuronID)
-	}
-
-	links := make([]*Link, 0)
-	for _, id := range linkIDs {
-		link := b.getLink(id)
-		if link == nil {
-			return errors.ErrLinkNotFound(id)
-		}
-		links = append(links, link)
-	}
-
-	return neu.addTriggerGroup(links...)
-}
-
-// DeleteTriggerGroup ...
-func (b *Brainprint) DeleteTriggerGroup(neuronID string, linkIDs ...string) error {
-	neu := b.getNeuron(neuronID)
-	if neu == nil {
-		return errors.ErrNeuronNotFound(neuronID)
-	}
-
-	links := make([]*Link, 0)
-	for _, id := range linkIDs {
-		link := b.getLink(id)
-		if link == nil {
-			return errors.ErrLinkNotFound(id)
-		}
-		links = append(links, link)
-	}
-
-	neu.deleteTriggerGroup(links...)
-
-	return nil
-}
-
-// Build will build BrainLocal
-func (b *Brainprint) Build(withOpts ...Option) Brain {
-	bpcp := b.deepCopy()
-	brain := NewBrainLocal(*bpcp, withOpts...)
-
-	return brain
-}
-
-// BindCastGroupSelectFunc bind custom select function of cast group, default select default cast group.
-func (b *Brainprint) BindCastGroupSelectFunc(neuronID string, selectFn func(brain BrainRuntime) string) error {
-	neu := b.getNeuron(neuronID)
-	if neu == nil {
-		return errors.ErrNeuronNotFound(neuronID)
-	}
-
-	neu.selectFn = selectFn
-
-	return nil
-}
-
-func (b *Brainprint) HasLink(linkID string) bool {
-	return b.hasLink(linkID)
-}
-
-func (b *Brainprint) HasEntryLink() bool {
-	for _, link := range b.links {
-		if link.IsEntryLink() {
+func (b *brainprint) HasEntryLink() bool {
+	for _, l := range b.links {
+		if l.IsEntryLink() {
 			return true
 		}
 	}
@@ -283,67 +107,207 @@ func (b *Brainprint) HasEntryLink() bool {
 	return false
 }
 
-func (b *Brainprint) HasEndLink() bool {
-	// if we have End Neuron, have End link
-	return b.hasNeuron(EndNeuronID)
-}
-
-func (b *Brainprint) hasLink(linkID string) bool {
-	_, found := b.links[linkID]
-	return found
-}
-
-func (b *Brainprint) HasNeuron(neuronID string) bool {
-	return b.hasNeuron(neuronID)
-}
-
-func (b *Brainprint) HasEndNeuron() bool {
-	return b.hasNeuron(EndNeuronID)
-}
-
-func (b *Brainprint) hasNeuron(neuronID string) bool {
-	_, found := b.neurons[neuronID]
-	return found
-}
-
-func (b *Brainprint) ensureEndNeuron() {
-	if b.hasNeuron(EndNeuronID) {
-		return
-	}
-	neuron := newEndNeuron()
-	b.neurons[neuron.id] = neuron
-}
-
-func (b *Brainprint) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	err := enc.AddArray("neurons", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
-		for _, neuron := range b.neurons {
-			if err := ae.AppendObject(neuron); err != nil {
-				return err
-			}
+func (b *brainprint) HasEndLink() bool {
+	for _, l := range b.links {
+		if l.IsEndLink() {
+			return true
 		}
-
-		return nil
-	}))
-	if err != nil {
-		return err
 	}
 
-	err = enc.AddArray("links", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
-		for _, link := range b.links {
-			if err := ae.AppendObject(link); err != nil {
-				return err
-			}
+	return false
+}
+
+func (b *brainprint) ListLinks() []brain.Link {
+	ret := make([]brain.Link, 0, len(b.links))
+	for _, l := range b.links {
+		ret = append(ret, l)
+	}
+
+	return ret
+}
+
+func (b *brainprint) ListEntryLinks() []brain.Link {
+	ret := make([]brain.Link, 0)
+	for _, l := range b.links {
+		if l.IsEntryLink() {
+			ret = append(ret, l)
 		}
+	}
 
+	return ret
+}
+
+func (b *brainprint) ListEndLinks() []brain.Link {
+	ret := make([]brain.Link, 0)
+	for _, l := range b.links {
+		if l.IsEndLink() {
+			ret = append(ret, l)
+		}
+	}
+
+	return ret
+}
+
+func (b *brainprint) ListInLinks(neuronID string) []brain.Link {
+	if !b.HasNeuron(neuronID) {
 		return nil
-	}))
-	if err != nil {
-		return err
+	}
+	ret := make([]brain.Link, 0, len(b.links))
+	for _, l := range b.links {
+		if l.dest == neuronID {
+			ret = append(ret, l)
+		}
 	}
 
-	if b.timeout != nil {
-		enc.AddDuration("timeout", *b.timeout)
+	return ret
+}
+
+func (b *brainprint) ListOutLinks(neuronID string) []brain.Link {
+	if !b.HasNeuron(neuronID) {
+		return nil
+	}
+	ret := make([]brain.Link, 0, len(b.links))
+	for _, l := range b.links {
+		if l.src == neuronID {
+			ret = append(ret, l)
+		}
 	}
 
-	return nil
+	return ret
+}
+
+func (b *brainprint) AddNeuron(processFn func(bc processor.BrainContext) error, withOpts ...brain.NeuronOption) brain.Neuron {
+	return b.addNeuronWithProcessor(processor.NewFuncProcessor(processFn), withOpts...)
+}
+
+func (b *brainprint) AddNeuronWithProcessor(processor processor.Processor, withOpts ...brain.NeuronOption) brain.Neuron {
+	return b.addNeuronWithProcessor(processor, withOpts...)
+}
+
+func (b *brainprint) AddLink(from, to brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+	// validate
+	src, ok := b.neurons[from.GetID()]
+	if !ok {
+		return nil, errors.ErrNeuronNotFound(from.GetID())
+	}
+	dest, ok := b.neurons[to.GetID()]
+	if !ok {
+		return nil, errors.ErrNeuronNotFound(to.GetID())
+	}
+	// new link, and neurons set
+	l := newLink(from.GetID(), to.GetID())
+	src.addOutLink(l.GetID())
+	dest.addInLink(l.GetID())
+
+	// bp add link
+	for _, opt := range withOpts {
+		opt.Apply(l)
+	}
+	b.links[l.GetID()] = l
+
+	return l, nil
+}
+
+func (b *brainprint) AddEntryLinkTo(to brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+	// validate
+	dest, ok := b.neurons[to.GetID()]
+	if !ok {
+		return nil, errors.ErrNeuronNotFound(to.GetID())
+	}
+	// new link, and neurons set
+	l := newEntryLink(to.GetID())
+	dest.addInLink(l.GetID())
+
+	// bp add link
+	for _, opt := range withOpts {
+		opt.Apply(l)
+	}
+	b.links[l.GetID()] = l
+
+	return l, nil
+}
+
+func (b *brainprint) AddEndLinkFrom(from brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+	// validate
+	src, ok := b.neurons[from.GetID()]
+	if !ok {
+		return nil, errors.ErrNeuronNotFound(from.GetID())
+	}
+	// ensure END neuron
+	end := b.ensureEndNeuron()
+	// new link, and neurons set
+	l := newEndLink(src.GetID())
+	src.addOutLink(l.GetID())
+	end.addInLink(l.GetID())
+
+	// bp add link
+	for _, opt := range withOpts {
+		opt.Apply(l)
+	}
+	b.links[l.GetID()] = l
+
+	return l, nil
+}
+
+func (b *brainprint) Clone() brain.Blueprint {
+	if b == nil {
+		return nil
+	}
+	cp := &brainprint{
+		id:      b.id,
+		labels:  utils.LabelsDeepCopy(b.labels),
+		neurons: make(map[string]*neuron),
+		links:   make(map[string]*link),
+	}
+	for id, n := range b.neurons {
+		cp.neurons[id] = n.deepCopy()
+	}
+	for id, l := range b.links {
+		cp.links[id] = l.deepCopy()
+	}
+	return cp
+}
+
+func (b *brainprint) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("id", b.id).
+		Any("labels", b.labels).
+		Array("links", linkArray(b.links)).
+		Array("neurons", neuArray(b.neurons))
+}
+
+type neuArray map[string]*neuron
+type linkArray map[string]*link
+
+func (ns neuArray) MarshalZerologArray(a *zerolog.Array) {
+	for _, n := range ns {
+		a.Object(n)
+	}
+}
+
+func (ls linkArray) MarshalZerologArray(a *zerolog.Array) {
+	for _, l := range ls {
+		a.Object(l)
+	}
+}
+
+func (b *brainprint) addNeuronWithProcessor(p processor.Processor, withOpts ...brain.NeuronOption) brain.Neuron {
+	n := newNeuron(p)
+	for _, opt := range withOpts {
+		opt.Apply(n)
+	}
+	b.neurons[n.GetID()] = n
+
+	return n
+}
+
+func (b *brainprint) ensureEndNeuron() *neuron {
+	n, ok := b.neurons[brain.EndNeuronID]
+	if ok {
+		return n
+	}
+
+	n = newEndNeuron()
+	b.neurons[n.GetID()] = n
+
+	return n
 }

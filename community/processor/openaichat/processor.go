@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/zenmodel/zenmodel/community/tools"
+	"github.com/zenmodel/zenmodel/processor"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +67,7 @@ type RequestConfig struct {
 	ToolChoice any `json:"tool_choice,omitempty"`
 }
 
-func (p *OpenAIChatProcessor) Process(brain zenmodel.BrainRuntime) error {
+func (p *OpenAIChatProcessor) Process(brain processor.BrainContext) error {
 	p.logger.Info("openAI chat processor start processing")
 
 	v := brain.GetMemory(p.memoryKeyMessages)
@@ -118,7 +118,7 @@ func (p *OpenAIChatProcessor) Process(brain zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func (p *OpenAIChatProcessor) DeepCopy() zenmodel.Processor {
+func (p *OpenAIChatProcessor) Clone() processor.Processor {
 	return &OpenAIChatProcessor{
 		memoryKeyMessages: p.memoryKeyMessages,
 		requestConfig:     p.requestConfig,
@@ -128,31 +128,31 @@ func (p *OpenAIChatProcessor) DeepCopy() zenmodel.Processor {
 	}
 }
 
-func (p *OpenAIChatProcessor) WithLogger(logger *zap.Logger) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithLogger(logger *zap.Logger) processor.Processor {
 	p.logger = logger
 	return p
 }
 
-func (p *OpenAIChatProcessor) WithMemoryKeyMessages(memoryKeyMessages string) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithMemoryKeyMessages(memoryKeyMessages string) processor.Processor {
 	p.memoryKeyMessages = memoryKeyMessages
 	return p
 }
 
-func (p *OpenAIChatProcessor) WithRequestConfig(requestConfig RequestConfig) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithRequestConfig(requestConfig RequestConfig) processor.Processor {
 	p.requestConfig = requestConfig
 	return p
 }
 
-func (p *OpenAIChatProcessor) WithClientConfig(clientConfig openai.ClientConfig) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithClientConfig(clientConfig openai.ClientConfig) processor.Processor {
 	p.clientConfig = clientConfig
 	return p
 }
 
-func (p *OpenAIChatProcessor) WithClient(client *openai.Client) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithClient(client *openai.Client) processor.Processor {
 	p.client = client
 	return p
 }
-func (p *OpenAIChatProcessor) WithToolCallDefinitions(toolCallDefinitions []tools.ToolCallDefinition) zenmodel.Processor {
+func (p *OpenAIChatProcessor) WithToolCallDefinitions(toolCallDefinitions []tools.ToolCallDefinition) processor.Processor {
 	toos := make([]openai.Tool, 0)
 	for _, toolCallDefinition := range toolCallDefinitions {
 		toos = append(toos, openai.Tool{

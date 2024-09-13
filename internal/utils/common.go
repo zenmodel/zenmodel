@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/rs/xid"
 )
 
-func GenUUID() string {
-	return uuid.New().String()[0:8]
+func GenID() string {
+	return xid.New().String()
+}
+
+func GenIDShort() string {
+	return xid.New().String()[15:]
 }
 
 // SlicesContains 检查 s 中是否包含所有的 sub
@@ -58,4 +62,13 @@ func PrintMap[V fmt.Stringer](m map[string]V) string {
 	ret += "}"
 
 	return ret
+}
+
+func LabelsDeepCopy(labels map[string]string) map[string]string {
+	newMap := make(map[string]string)
+	for key, value := range labels {
+		newMap[key] = value
+	}
+
+	return newMap
 }

@@ -8,33 +8,35 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
+	bp := zenmodel.NewBlueprint()
 	// add neuron
-	bp.AddNeuron("generation", generate)
-	bp.AddNeuron("reflection", reflect)
+	generation := bp.AddNeuron(generate)
+	reflection := bp.AddNeuron(reflect)
 
 	/* This example omits error handling */
 	// add entry link
-	_, _ = bp.AddEntryLink("generation")
+	_, _ = bp.AddEntryLinkTo(generation)
 
 	// add link
-	continueLink, _ := bp.AddLink("generation", "reflection")
-	_, _ = bp.AddLink("reflection", "generation")
+	continueLink, _ := bp.AddLink(generation, reflection)
+	_, _ = bp.AddLink(reflection, generation)
 
 	// add end link
-	endLink, _ := bp.AddEndLink("generation")
+	endLink, _ := bp.AddEndLinkFrom(generation)
 
 	// add link to cast group of a neuron
-	_ = bp.AddLinkToCastGroup("generation", "reflect", continueLink)
-	_ = bp.AddLinkToCastGroup("generation", "end", endLink)
+	_ = generation.AddCastGroup("reflect", continueLink)
+	_ = generation.AddCastGroup("end", endLink)
 	// bind cast group select function for neuron
-	_ = bp.BindCastGroupSelectFunc("generation", generationNext)
+	generation.BindCastGroupSelectFunc(generationNext)
 
 	// build brain
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{
@@ -51,7 +53,7 @@ func main() {
 	fmt.Printf("messages: %s\n", messages)
 }
 
-func generate(b zenmodel.BrainRuntime) error {
+func generate(b processor.BrainContext) error {
 	fmt.Println("generation assistant running...")
 
 	// get messages form memory
@@ -85,7 +87,7 @@ func generate(b zenmodel.BrainRuntime) error {
 	return nil
 }
 
-func reflect(b zenmodel.BrainRuntime) error {
+func reflect(b processor.BrainContext) error {
 	fmt.Println("reflection assistant running...")
 
 	// get messages form memory
@@ -134,11 +136,11 @@ Provide detailed recommendations, including requests for length, depth, style, e
 	return nil
 }
 
-func generationNext(b zenmodel.BrainRuntime) string {
-	if !b.ExistMemory("messages") {
+func generationNext(bcr processor.BrainContextReader) string {
+	if !bcr.ExistMemory("messages") {
 		return "end"
 	}
-	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
+	messages, _ := bcr.GetMemory("messages").([]openai.ChatCompletionMessage)
 	if len(messages) > 6 {
 		return "end"
 	}

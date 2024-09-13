@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
 	"github.com/zenmodel/zenmodel/community/brain/openai_tool_agent"
 	"github.com/zenmodel/zenmodel/community/processor/openaichat"
 	"github.com/zenmodel/zenmodel/community/tools"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 type PastStep struct {
@@ -26,7 +27,7 @@ func (s PastSteps) String() string {
 	return builder.String()
 }
 
-func toolAgentProcess(b zenmodel.BrainRuntime) error {
+func toolAgentProcess(b processor.BrainContext) error {
 	plan, ok := b.GetMemory(memKeyPlan).(*Plan)
 	if !ok {
 		return fmt.Errorf("assert plan error, plan: %+v", b.GetMemory(memKeyPlan))
@@ -74,7 +75,7 @@ func SearchAgent(query string) (result string, err error) {
 		return "", err
 	}
 	// build brain
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 	// set memory and trig all entry links
 	if err = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: query}},

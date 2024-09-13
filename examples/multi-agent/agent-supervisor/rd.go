@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/community/processor/go_code_tester"
 	"github.com/zenmodel/zenmodel/community/processor/openai_structured_output"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 var (
@@ -31,7 +31,7 @@ type CoderProcessor struct {
 	requestConfig openai_structured_output.RequestConfig
 }
 
-func (p *CoderProcessor) Process(b zenmodel.BrainRuntime) error {
+func (p *CoderProcessor) Process(b processor.BrainContext) error {
 	var prompt string
 	if !b.ExistMemory(memKeyCodes) {
 		// read task, write code
@@ -64,7 +64,7 @@ Help me correct my code.
 	return nil
 }
 
-func (p *CoderProcessor) DeepCopy() zenmodel.Processor {
+func (p *CoderProcessor) Clone() processor.Processor {
 	return &CoderProcessor{
 		requestConfig: p.requestConfig,
 		clientConfig:  p.clientConfig,
@@ -88,8 +88,8 @@ func (p *CoderProcessor) WithRequestConfig(requestConfig openai_structured_outpu
 }
 
 func (p *CoderProcessor) newStructuredOutputProcessor(prompt string) *openai_structured_output.OpenAIStructuredOutputProcessor {
-	processor := openai_structured_output.NewProcessor()
-	_ = processor.WithPromptTemplate(prompt)
-	_ = processor.WithOutputStructDefinition(go_code_tester.Codes{}, (go_code_tester.Codes{}).FunctionName(), (go_code_tester.Codes{}).FunctionDescription())
-	return processor.WithClientConfig(p.clientConfig).WithRequestConfig(p.requestConfig)
+	proc := openai_structured_output.NewProcessor()
+	_ = proc.WithPromptTemplate(prompt)
+	_ = proc.WithOutputStructDefinition(go_code_tester.Codes{}, (go_code_tester.Codes{}).FunctionName(), (go_code_tester.Codes{}).FunctionDescription())
+	return proc.WithClientConfig(p.clientConfig).WithRequestConfig(p.requestConfig)
 }

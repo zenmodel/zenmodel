@@ -9,33 +9,36 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
+	bp := zenmodel.NewBlueprint()
+
 	// add neuron
-	bp.AddNeuron("llm", chatLLM)
-	bp.AddNeuron("action", callTools)
+	llm := bp.AddNeuron(chatLLM)
+	action := bp.AddNeuron(callTools)
 
 	/* This example omits error handling */
 	// add entry link
-	_, _ = bp.AddEntryLink("llm")
+	_, _ = bp.AddEntryLinkTo(llm)
 
 	// add link
-	continueLink, _ := bp.AddLink("llm", "action")
-	_, _ = bp.AddLink("action", "llm")
+	continueLink, _ := bp.AddLink(llm, action)
+	_, _ = bp.AddLink(action, llm)
 
 	// add end link
-	endLink, _ := bp.AddEndLink("llm")
+	endLink, _ := bp.AddEndLinkFrom(llm)
 
 	// add link to cast group of a neuron
-	_ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
-	_ = bp.AddLinkToCastGroup("llm", "end", endLink)
+	_ = llm.AddCastGroup("continue", continueLink)
+	_ = llm.AddCastGroup("end", endLink)
 	// bind cast group select function for neuron
-	_ = bp.BindCastGroupSelectFunc("llm", llmNext)
+	llm.BindCastGroupSelectFunc(llmNext)
 
 	// build brain
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: "What is the weather in Boston today?"}})
@@ -72,11 +75,11 @@ var tools = []openai.Tool{
 	},
 }
 
-func chatLLM(b zenmodel.BrainRuntime) error {
+func chatLLM(bc processor.BrainContext) error {
 	fmt.Println("run here chatLLM...")
 
 	// get need info form memory
-	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
+	messages, _ := bc.GetMemory("messages").([]openai.ChatCompletionMessage)
 
 	ctx := context.Background()
 	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
@@ -95,16 +98,16 @@ func chatLLM(b zenmodel.BrainRuntime) error {
 	msg := resp.Choices[0].Message
 	fmt.Printf("LLM response: %+v\n", msg)
 	messages = append(messages, msg)
-	_ = b.SetMemory("messages", messages)
+	_ = bc.SetMemory("messages", messages)
 
 	return nil
 }
 
-func callTools(b zenmodel.BrainRuntime) error {
+func callTools(bc processor.BrainContext) error {
 	fmt.Println("run here callTools...")
 
 	// get need info form memory
-	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
+	messages, _ := bc.GetMemory("messages").([]openai.ChatCompletionMessage)
 	lastMsg := messages[len(messages)-1]
 
 	for _, call := range lastMsg.ToolCalls {
@@ -122,16 +125,16 @@ func callTools(b zenmodel.BrainRuntime) error {
 			})
 		}
 	}
-	_ = b.SetMemory("messages", messages)
+	_ = bc.SetMemory("messages", messages)
 
 	return nil
 }
 
-func llmNext(b zenmodel.BrainRuntime) string {
-	if !b.ExistMemory("messages") {
+func llmNext(bcr processor.BrainContextReader) string {
+	if !bcr.ExistMemory("messages") {
 		return "end"
 	}
-	messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
+	messages, _ := bcr.GetMemory("messages").([]openai.ChatCompletionMessage)
 	lastMsg := messages[len(messages)-1]
 	if len(lastMsg.ToolCalls) == 0 { // no need to call any tools
 		return "end"

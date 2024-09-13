@@ -4,42 +4,43 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 var (
-	NeuronLeader     = "Leader"
-	NeuronRD         = "RD"
-	NeuronQA         = "QA"
+	FeedBackRD       = "RD"
+	FeedBackQA       = "QA"
 	DecisionRD       = "RD"
 	DecisionQA       = "QA"
 	DecisionResponse = "Response"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
+	bp := zenmodel.NewBlueprint()
 
-	bp.AddNeuron(NeuronLeader, LeaderProcess)
-	bp.AddNeuron(NeuronQA, QAProcess)
-	bp.AddNeuronWithProcessor(NeuronRD, NewRDProcessor())
+	neuronLeader := bp.AddNeuron(LeaderProcess)
+	neuronQA := bp.AddNeuron(QAProcess)
+	neuronRD := bp.AddNeuronWithProcessor(NewRDProcessor())
 
-	_, _ = bp.AddEntryLink(NeuronLeader)
+	_, _ = bp.AddEntryLinkTo(neuronLeader)
 	// leader out-link
-	rdLink, _ := bp.AddLink(NeuronLeader, NeuronRD)
-	qaLink, _ := bp.AddLink(NeuronLeader, NeuronQA)
-	endLink, _ := bp.AddEndLink(NeuronLeader)
+	rdLink, _ := bp.AddLink(neuronLeader, neuronRD)
+	qaLink, _ := bp.AddLink(neuronLeader, neuronQA)
+	endLink, _ := bp.AddEndLinkFrom(neuronLeader)
 
 	// leader in-link
-	_, _ = bp.AddLink(NeuronRD, NeuronLeader)
-	_, _ = bp.AddLink(NeuronQA, NeuronLeader)
+	_, _ = bp.AddLink(neuronRD, neuronLeader)
+	_, _ = bp.AddLink(neuronQA, neuronLeader)
 
-	_ = bp.AddLinkToCastGroup(NeuronLeader, DecisionRD, rdLink)
-	_ = bp.AddLinkToCastGroup(NeuronLeader, DecisionQA, qaLink)
-	_ = bp.AddLinkToCastGroup(NeuronLeader, DecisionResponse, endLink)
-	_ = bp.BindCastGroupSelectFunc(NeuronLeader, func(b zenmodel.BrainRuntime) string {
-		return b.GetMemory(memKeyDecision).(string)
+	_ = neuronLeader.AddCastGroup(DecisionRD, rdLink)
+	_ = neuronLeader.AddCastGroup(DecisionQA, qaLink)
+	_ = neuronLeader.AddCastGroup(DecisionResponse, endLink)
+	neuronLeader.BindCastGroupSelectFunc(func(bcr processor.BrainContextReader) string {
+		return bcr.GetMemory(memKeyDecision).(string)
 	})
 
-	brain := bp.Build()
+	brain := brainlocal.NewBrainLocal(bp)
 	_ = brain.EntryWithMemory(memKeyDemand, "Help me write a function `func Add (x, y int) int` with golang to implement addition, and implement unit test in a separate _test .go file, at least 3 test cases are required")
 	brain.Wait()
 	fmt.Printf("Response: %s\n", brain.GetMemory(memKeyResponse).(string))

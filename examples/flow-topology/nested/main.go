@@ -4,29 +4,33 @@ import (
 	"fmt"
 
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
+	"github.com/zenmodel/zenmodel/processor"
 )
 
 func main() {
-	bp := zenmodel.NewBrainPrint()
-	bp.AddNeuron("nested", nestedBrain)
-	_, _ = bp.AddEntryLink("nested")
+	bp := zenmodel.NewBlueprint()
+	nested := bp.AddNeuron(nestedBrain)
 
-	brain := bp.Build()
+	_, _ = bp.AddEntryLinkTo(nested)
+
+	brain := brainlocal.NewBrainLocal(bp)
 	_ = brain.Entry()
 	brain.Wait()
 
 	fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
 }
 
-func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
-	bp := zenmodel.NewBrainPrint()
-	bp.AddNeuron("run", func(curBrain zenmodel.BrainRuntime) error {
+func nestedBrain(outerBrain processor.BrainContext) error {
+	bp := zenmodel.NewBlueprint()
+	run := bp.AddNeuron(func(curBrain processor.BrainContext) error {
 		_ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
 		return nil
 	})
-	_, _ = bp.AddEntryLink("run")
 
-	brain := bp.Build()
+	_, _ = bp.AddEntryLinkTo(run)
+
+	brain := brainlocal.NewBrainLocal(bp)
 
 	// run nested brain
 	_ = brain.Entry()

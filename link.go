@@ -1,95 +1,89 @@
 package zenmodel
 
 import (
+	"github.com/rs/zerolog"
+	"github.com/zenmodel/zenmodel/brain"
 	"github.com/zenmodel/zenmodel/internal/utils"
-	"go.uber.org/zap/zapcore"
 )
 
-const (
-	EntryLinkFrom = "EXTERNAL_SIGNAL"
-	EndLinkTo     = EndNeuronID
-)
+func newLink(srcNeuronID, destNeuronID string) *link {
+	return &link{
+		id:     utils.GenIDShort(),
+		labels: make(map[string]string),
+		src:    srcNeuronID,
+		dest:   destNeuronID,
+	}
+}
 
-type Link struct {
-	// ID 不可编辑
+func newEntryLink(destNeuronID string) *link {
+	return &link{
+		id:     utils.GenIDShort(),
+		labels: make(map[string]string),
+		src:    brain.EntryLinkFrom,
+		dest:   destNeuronID,
+	}
+}
+
+func newEndLink(srcNeuronID string) *link {
+	return &link{
+		id:     utils.GenIDShort(),
+		labels: make(map[string]string),
+		src:    srcNeuronID,
+		dest:   brain.EndLinkTo,
+	}
+}
+
+type link struct {
+	// ID
 	id string
-	// state 不可编辑，
-	state LinkState
-	count struct {
-		// from 执行完整，开始尝试传递的次数
-		process int
-		// 传递成功的次数
-		succeed int
-		// 传递失败的次数。可能是超时、其他触发组触发当前的取消等原因
-		failed int
-	}
-
-	// from neuron ID
-	from string
-	// to neuron ID
-	to string
+	// labels
+	labels map[string]string
+	// from source neuron ID
+	src string
+	// to destination neuron ID
+	dest string
 }
 
-type LinkState string
+func (l *link) GetSrcNeuronID() string {
+	return l.src
+}
 
-const (
-	LinkStateInit  LinkState = "Init"
-	LinkStateWait  LinkState = "Wait"
-	LinkStateReady LinkState = "Ready"
-)
+func (l *link) GetDestNeuronID() string {
+	return l.dest
+}
 
-func newLink(from, to *Neuron) *Link {
-	return &Link{
-		id:    utils.GenUUID(),
-		state: LinkStateInit,
-		from:  from.id,
-		to:    to.id,
+func (l *link) GetID() string {
+	return l.id
+}
+
+func (l *link) GetLabels() map[string]string {
+	return l.labels
+}
+
+func (l *link) SetLabels(labels map[string]string) {
+	l.labels = labels
+}
+
+func (l *link) IsEntryLink() bool {
+	return l.src == brain.EntryLinkFrom
+}
+
+func (l *link) IsEndLink() bool {
+	return l.dest == brain.EndLinkTo
+}
+
+func (l *link) deepCopy() *link {
+	return &link{
+		id:     l.id,
+		labels: utils.LabelsDeepCopy(l.labels),
+		src:    l.src,
+		dest:   l.dest,
 	}
 }
 
-func newEntryLink(to *Neuron) *Link {
-	return &Link{
-		id:    utils.GenUUID(),
-		state: LinkStateInit,
-		from:  EntryLinkFrom,
-		to:    to.id,
-	}
-}
-
-func (l *Link) Clone() *Link {
-	return l.deepCopy()
-}
-
-func (l *Link) deepCopy() *Link {
-	if l == nil {
-		return nil
-	}
-	cp := &Link{
-		id:    l.id,
-		state: l.state,
-		from:  l.from,
-		to:    l.to,
-	}
-	cp.count.process = l.count.process
-	cp.count.succeed = l.count.succeed
-	cp.count.failed = l.count.failed
-
-	return cp
-}
-
-func (l *Link) IsEntryLink() bool {
-	if l.from == EntryLinkFrom {
-		return true
-	}
-
-	return false
-}
-
-func (l *Link) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("id", l.id)
-	enc.AddString("state", string(l.state))
-	enc.AddString("src", l.from)
-	enc.AddString("dest", l.to)
-
-	return nil
+func (l *link) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("id", l.id).
+		Any("labels", l.labels).
+		Str("src", l.src).
+		Str("dest", l.dest)
 }
