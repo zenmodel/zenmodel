@@ -223,6 +223,7 @@ func (b *BrainLocal) Shutdown() {
 	b.logger.Info().Msg("brain local shutdown")
 	close(b.BrainMaintainer.nQueue)
 	close(b.BrainMaintainer.bQueue)
+	b.BrainMemory.cache.Close()
 	b.setState(brain.BrainStateShutdown)
 }
 
