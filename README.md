@@ -47,14 +47,14 @@ Let's use `zenmodel` to build a `Brain` as shown below.
 
 <img src="examples/chat_agent/chat_agent_with_function_calling/chat-agent-with-tools.png" width="476" height="238">
 
-### Defining a Brainprint
+### Defining a Blueprint
 
-Define the graph's topology by outlining a brainprint (a shorthand for brain blueprint).
+Define the graph's topology by outlining a blueprint.
 
-#### 1. Create a brainprint
+#### 1. Create a blueprint
 
 ```go
-bp := zenmodel.NewBrainPrint()
+bp := zenmodel.NewBlueprint()
 ```
 
 #### 2. Add `Neuron`s
@@ -63,8 +63,8 @@ Bind a processing function to a neuron or custom `Processor`. In this example, a
 
 ```go
 // add neuron with function
-bp.AddNeuron("llm", chatLLM)
-bp.AddNeuron("action", callTools)
+llm := bp.AddNeuron(chatLLM)
+action := bp.AddNeuron(callTools)
 ```
 
 #### 3. Add `Link`s
@@ -78,14 +78,14 @@ There are three types of `Link`s:
 ```go
 /* This example omits error handling */
 // add entry link
-_, _ = bp.AddEntryLink("llm")
+_, _ = bp.AddEntryLinkTo(llm)
 
 // add link
-continueLink, _ := bp.AddLink("llm", "action")
-_, _ = bp.AddLink("action", "llm")
+continueLink, _ := bp.AddLink(llm, action)
+_, _ = bp.AddLink(action, llm)
 
 // add end link
-endLink, _ := bp.AddEndLink("llm")
+endLink, _ := bp.AddEndLinkFrom(llm)
 ```
 
 #### 4. Set cast select at a branch
@@ -93,34 +93,34 @@ endLink, _ := bp.AddEndLink("llm")
 By default, all outbound links of a `Neuron` will propagate (belonging to the default casting group). To set up branch selections where you only want certain links to propagate, define casting groups (CastGroup) along with a casting selection function (CastGroupSelectFunc). Each cast group contains a set of links, and the return string of the cast group selection function determines which cast group to propagate to.
 
 ```go
-// add link to cast group of a neuron
-_ = bp.AddLinkToCastGroup("llm", "continue", continueLink)
-_ = bp.AddLinkToCastGroup("llm", "end", endLink)
+	// add link to cast group of a neuron
+_ = llm.AddCastGroup("continue", continueLink)
+_ = llm.AddCastGroup("end", endLink)
 // bind cast group select function for neuron
-_ = bp.BindCastGroupSelectFunc("llm", llmNext)
+llm.BindCastGroupSelectFunc(llmNext)
 ```
 
 ```go
-func llmNext(b zenmodel.BrainRuntime) string {
-    if !b.ExistMemory("messages") {
-        return "end"
-    }
-    messages, _ := b.GetMemory("messages").([]openai.ChatCompletionMessage)
-    lastMsg := messages[len(messages)-1]
-    if len(lastMsg.ToolCalls) == 0 { // no need to call any tools
-        return "end"
-    }
-    
-    return "continue"
+func llmNext(bcr processor.BrainContextReader) string {
+	if !bcr.ExistMemory("messages") {
+		return "end"
+	}
+	messages, _ := bcr.GetMemory("messages").([]openai.ChatCompletionMessage)
+	lastMsg := messages[len(messages)-1]
+	if len(lastMsg.ToolCalls) == 0 { // no need to call any tools
+		return "end"
+	}
+
+	return "continue"
 }
 ```
 
-### Building a `Brain` from a Brainprint
+### Building a `Brain` from a Blueprint
 
 Build with various withOpts parameters, although it can be done without configuring any, similar to the example below, using default construction parameters.
 
 ```go
-brain := bp.Build()
+brain := brainlocal.NewBrainLocal(bp)
 ```
 
 ### Running the `Brain`
@@ -166,9 +166,9 @@ The connection between Neurons is called a `Link`, and `Link` is directional, ha
 Typically, both the `source` and the `destination` specify a Neuron. The method to add a `regular Link` is as follows:
 
 ```go
-// add Link, return link ID
-// bp := zenmodel.NewBrainPrint()
-id, err := bp.AddLink("src_neuron", "dest_neuron")
+// add Link, return link object
+// bp := zenmodel.NewBlueprint()
+linkObj, err := bp.AddLink(srcNeuron, destNeuron)
 ```
 
 #### Entry Link
@@ -176,8 +176,8 @@ id, err := bp.AddLink("src_neuron", "dest_neuron")
 You can also add an `Entry Link`, this kind of Link does not have a `source Neuron`, and only specifies a `destination Neuron`; its `source` is the user.
 
 ```go
-// add Entry Link, return link ID
-id, err := bp.AddEntryLink("dest_neuron")
+// add Entry Link, return link object
+linkObj, err := bp.AddEntryLinkTo(destNeuron)
 ```
 
 #### End Link
@@ -187,8 +187,8 @@ Adding an `End Link` will also create a unique `End Neuron` for the entire Brain
 This is the sole method to create an `End Neuron`; it cannot be individually created without connecting it.
 
 ```go
-// add End Link, return link ID
-id, err := bp.AddEndLink("src_neuron")
+// add End Link, return link object
+linkObj, err := bp.AddEndLinkFrom(src_neuron)
 ```
 
 </details>
@@ -207,25 +207,25 @@ When adding a `Neuron`, you need to specify its processing logic, either by dire
 
 ```go
 // add Neuron with process function
-bp.AddNeuron("neuron_id", processFn)
+neuronObj := bp.AddNeuron(processFn)
 
 // add Neuron with custom processor
-bp.AddNeuronWithProcessor("neuron_id", processor)
+neuronObj2 := bp.AddNeuronWithProcessor(processor)
 ```
 
 The function signature for ProcessFn is as follows, where BrainRuntime is mainly used for reading and writing to the Brain's Memory, details of which are introduced in the [BrainRuntime section](#BrainRuntime).
 
 ```go
 // processFn signature
-func(runtime BrainRuntime) error
+func(bc processor.BrainContext) error
 ```
 
 The interface definition for a Processor is:
 
 ```go
 type Processor interface {
-    Process(brain BrainRuntime) error
-    DeepCopy() Processor
+    Process(bc processor.BrainContext) error
+    Clone() Processor
 }
 ```
 
@@ -241,7 +241,7 @@ An `End Neuron` is not mandatory. Without it, the Brain can still enter a Sleepi
 
 ```go
 // bind cast group select function for neuron
-err := bp.BindCastGroupSelectFunc("neuron_id", selectFn)
+neuronObj.BindCastGroupSelectFunc(selectFn)
 ```
 
 #### CastGroup
@@ -257,7 +257,7 @@ If branch selection is required, you need to add a CastGroup and bind a CastGrou
 // AddLinkToCastGroup add links to a specific named cast group.
 // if the group does not exist, create the group. Groups that allow empty links.
 // The specified link will be removed from the default group if it originally belonged to the default group.
-err := bp.AddLinkToCastGroup("neuron_id", "group_A", linkID1, linkID2)
+err := neuronObj.AddCastGroup("group_A", linkObj1, linkObj2)
 ```
 
 #### TriggerGroup
@@ -274,22 +274,22 @@ If you need to wait for multiple upstream Neurons to finish in parallel before a
 // AddTriggerGroup by default, a single in-link is a group of its own. AddTriggerGroup adds the specified in-link to the same trigger group.
 // it also creates the trigger group. If the added trigger group contains the existing trigger group, the existing trigger group will be removed. This can also be deduplicated at the same time(you add an exist named group, the existing group will be removed first).
 // add trigger group with links
-err := bp.AddTriggerGroup("neuron_id", "group_B", linkID1, linkID2)
+err := neuronObj.AddTriggerGroup(linkObj1, linkObj2)
 ```
 
 </details>
 
 
-### Brainprint
+### Blueprint
 
 <details>
 <summary>Expand to view</summary>
 
-`Brainprint` is an abbreviation for Brain Blueprint, defining the graph topology structure of the Brain, as well as all Neurons and Links, in addition to the Brain's operational parameters. A runnable `Brain` can be built from the `Brainprint`.
+`Blueprint` is Brain Blueprint, defining the graph topology structure of the Brain, as well as all Neurons and Links, in addition to the Brain's operational parameters. A runnable `Brain` can be built from the `Blueprint`.
 Optionally, specific build configuration parameters can also be defined during construction, such as the size of Memory, the number of concurrent Workers for the Brain runtime, etc.
 
 ```go
-brain := bp.Build(zenmodel.WithWorkerNum(3), )
+brain := brainlocal.NewBrainLocal(bp, brainlocal.WithNeuronWorkerNum(3))
 ```
 
 </details>
@@ -315,24 +315,37 @@ Users can read from and write to Memory during Brain operation via Neuron Proces
 
 The `ProcessFn` and `CastGroupSelectFunc` functions both include the `BrainRuntime` as part of their parameters. The `BrainRuntime` encapsulates some information about the Brain's runtime, such as the Memory at the time the current Neuron is running, the ID of the Neuron currently being executed. These pieces of information are commonly used in the logic of function execution, and often involve writing to Memory. There are also cases where it is necessary to maintain the operation of the current Neuron while triggering downstream Neurons. The `BrainRuntime` interface is as follows:
 
-```go
-type BrainRuntime interface {
-    // SetMemory sets memories for the brain, one key-value pair is one memory.
-    // Memory will lazily initialize until `SetMemory` or any link is triggered
-    SetMemory(keysAndValues ...interface{}) error
-    // GetMemory retrieves memory by key
-    GetMemory(key interface{}) interface{}
-    // ExistMemory indicates whether there is a memory in the brain
-    ExistMemory(key interface{}) bool
-    // DeleteMemory deletes a single memory by key
-    DeleteMemory(key interface{})
-    // ClearMemory clears all memories
-    ClearMemory()
-    // GetCurrentNeuronID gets the current neuron's ID
-    GetCurrentNeuronID() string
-    // ContinueCast keeps the current process running, and continues casting
-    ContinueCast()
+```
+
+type BrainContext interface {
+	// SetMemory set memories for brain, one key value pair is one memory.
+	// memory will lazy initial util `SetMemory` or any link trig
+	SetMemory(keysAndValues ...interface{}) error
+	// GetMemory get memory by key
+	GetMemory(key interface{}) interface{}
+	// ExistMemory indicates whether there is a memory in the brain
+	ExistMemory(key interface{}) bool
+	// DeleteMemory delete one memory by key
+	DeleteMemory(key interface{})
+	// ClearMemory clear all memories
+	ClearMemory()
+	// GetCurrentNeuronID get current neuron id
+	GetCurrentNeuronID() string
+	// ContinueCast keep current process running, and continue cast
+	ContinueCast()
 }
+
+type BrainContextReader interface {
+	// GetMemory get memory by key
+	GetMemory(key interface{}) interface{}
+	// ExistMemory indicates whether there is a memory in the brain
+	ExistMemory(key interface{}) bool
+	// GetCurrentNeuronID get current neuron id
+	GetCurrentNeuronID() string
+	// ContinueCast keep current process running, and continue cast
+	ContinueCast()
+}
+
 ```
 
 </details>
@@ -350,78 +363,79 @@ type BrainRuntime interface {
 See the complete example here: [examples/flow-topology/parallel](./examples/flow-topology/parallel-and-wait)
 
 ```go
-var (
-    entryInput, entryPoetry, entryJoke string
-)
-
 func main() {
-    bp := zenmodel.NewBrainPrint()
-    bp.AddNeuron("input", inputFn)
-    bp.AddNeuron("poetry-template", poetryFn)
-    bp.AddNeuron("joke-template", jokeFn)
-    bp.AddNeuron("generate", genFn)
+	bp := zenmodel.NewBlueprint()
 
-    inputIn, _ := bp.AddLink("input", "generate")
-    poetryIn, _ := bp.AddLink("poetry-template", "generate")
-    jokeIn, _ := bp.AddLink("joke-template", "generate")
+	input := bp.AddNeuron(inputFn)
+	poetryTemplate := bp.AddNeuron(poetryFn)
+	jokeTemplate := bp.AddNeuron(jokeFn)
+	generate := bp.AddNeuron(genFn)
 
-    entryInput, _ = bp.AddEntryLink("input")
-    entryPoetry, _ = bp.AddEntryLink("poetry-template")
-    entryJoke, _ = bp.AddEntryLink("joke-template")
+	inputIn, _ := bp.AddLink(input, generate)
+	poetryIn, _ := bp.AddLink(poetryTemplate, generate)
+	jokeIn, _ := bp.AddLink(jokeTemplate, generate)
 
-    _ = bp.AddTriggerGroup("generate", inputIn, poetryIn)
-    _ = bp.AddTriggerGroup("generate", inputIn, jokeIn)
+	entryInput, _ := bp.AddEntryLinkTo(input)
+	entryPoetry, _ := bp.AddEntryLinkTo(poetryTemplate)
+	entryJoke, _ := bp.AddEntryLinkTo(jokeTemplate)
+	entryInput.GetID()
+	entryPoetry.GetID()
+	entryJoke.GetID()
 
-    brain := bp.Build()
+	_ = generate.AddTriggerGroup(inputIn, poetryIn)
+	_ = generate.AddTriggerGroup(inputIn, jokeIn)
 
-    // case 1: entry poetry and input
-    // expect: generate poetry
-    _ = brain.TrigLinks(entryPoetry)
-    _ = brain.TrigLinks(entryInput)
+	brain := brainlocal.NewBrainLocal(bp)
 
-    // case 2:entry joke and input
-    // expect: generate joke
-    //_ = brain.TrigLinks(entryJoke)
-    //_ = brain.TrigLinks(entryInput)
+	// case 1: entry poetry and input
+	// expect: generate poetry
+	_ = brain.TrigLinks(entryPoetry)
+	_ = brain.TrigLinks(entryInput)
 
-    // case 3: entry poetry and joke
-    // expect: keep blocking and waiting for any trigger group triggered
-    //_ = brain.TrigLinks(entryPoetry)
-    //_ = brain.TrigLinks(entryJoke)
+	// case 2:entry joke and input
+	// expect: generate joke
+	//_ = brain.TrigLinks(entryJoke)
+	//_ = brain.TrigLinks(entryInput)
 
-    // case 4: entry only poetry
-    // expect: keep blocking and waiting for any trigger group triggered
-    //_ = brain.TrigLinks(entryPoetry)
+	// case 3: entry poetry and joke
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
+	//_ = brain.TrigLinks(entryJoke)
 
-    // case 5: entry all
-    // expect: The first done trigger group triggered activates the generated Neuron,
-    // and the trigger group triggered later does not activate the generated Neuron again.
-    //_ = brain.Entry()
+	// case 4: entry only poetry
+	// expect: keep blocking and waiting for any trigger group triggered
+	//_ = brain.TrigLinks(entryPoetry)
 
-    brain.Wait()
+	// case 5: entry all
+	// expect: The first done trigger group triggered activates the generated Neuron,
+	// and the trigger group triggered later does not activate the generated Neuron again.
+	//_ = brain.Entry()
+
+	brain.Wait()
 }
 
-func inputFn(b zenmodel.BrainRuntime) error {
-    _ = b.SetMemory("input", "orange")
-    return nil
+func inputFn(b processor.BrainContext) error {
+	_ = b.SetMemory("input", "orange")
+	return nil
 }
 
-func poetryFn(b zenmodel.BrainRuntime) error {
-    _ = b.SetMemory("template", "poetry")
-    return nil
+func poetryFn(b processor.BrainContext) error {
+	_ = b.SetMemory("template", "poetry")
+	return nil
 }
 
-func jokeFn(b zenmodel.BrainRuntime) error {
-    _ = b.SetMemory("template", "joke")
-    return nil
+func jokeFn(b processor.BrainContext) error {
+	_ = b.SetMemory("template", "joke")
+	return nil
 }
 
-func genFn(b zenmodel.BrainRuntime) error {
-    input := b.GetMemory("input").(string)
-    tpl := b.GetMemory("template").(string)
-    fmt.Printf("Generating %s for %s\n", tpl, input)
-    return nil
+func genFn(b processor.BrainContext) error {
+	input := b.GetMemory("input").(string)
+	tpl := b.GetMemory("template").(string)
+	fmt.Printf("Generating %s for %s\n", tpl, input)
+	return nil
 }
+
 ```
 
 </details>
@@ -434,76 +448,75 @@ See the complete example here: [examples/flow-topology/branch](./examples/flow-t
 ```go
 
 func main() {
-    bp := zenmodel.NewBrainPrint()
-    bp.AddNeuron("condition", func(runtime zenmodel.BrainRuntime) error {
-        return nil // do nothing
-    })
-    bp.AddNeuron("cell-phone", func(runtime zenmodel.BrainRuntime) error {
-        fmt.Printf("Run here: Cell Phone\n")
-        return nil
-    })
-    bp.AddNeuron("laptop", func(runtime zenmodel.BrainRuntime) error {
-        fmt.Printf("Run here: Laptop\n")
-        return nil
-    })
-    bp.AddNeuron("ps5", func(runtime zenmodel.BrainRuntime) error {
-        fmt.Printf("Run here: PS5\n")
-        return nil
-    })
-    bp.AddNeuron("tv", func(runtime zenmodel.BrainRuntime) error {
-        fmt.Printf("Run here: TV\n")
-        return nil
-    })
-    bp.AddNeuron("printer", func(runtime zenmodel.BrainRuntime) error {
-        fmt.Printf("Run here: Printer\n")
-        return nil
-    })
+	bp := zenmodel.NewBlueprint()
+	condition := bp.AddNeuron(func(bc processor.BrainContext) error {
+		return nil // do nothing
+	})
+	cellPhone := bp.AddNeuron(func(bc processor.BrainContext) error {
+		fmt.Printf("Run here: Cell Phone\n")
+		return nil
+	})
+	laptop := bp.AddNeuron(func(bc processor.BrainContext) error {
+		fmt.Printf("Run here: Laptop\n")
+		return nil
+	})
+	ps5 := bp.AddNeuron(func(bc processor.BrainContext) error {
+		fmt.Printf("Run here: PS5\n")
+		return nil
+	})
+	tv := bp.AddNeuron(func(bc processor.BrainContext) error {
+		fmt.Printf("Run here: TV\n")
+		return nil
+	})
+	printer := bp.AddNeuron(func(bc processor.BrainContext) error {
+		fmt.Printf("Run here: Printer\n")
+		return nil
+	})
 
-    cellPhone, _ := bp.AddLink("condition", "cell-phone")
-    laptop, _ := bp.AddLink("condition", "laptop")
-    ps5, _ := bp.AddLink("condition", "ps5")
-    tv, _ := bp.AddLink("condition", "tv")
-    printer, _ := bp.AddLink("condition", "printer")
-    // add entry link
-    _, _ = bp.AddEntryLink("condition")
+	cellPhoneLink, _ := bp.AddLink(condition, cellPhone)
+	laptopLink, _ := bp.AddLink(condition, laptop)
+	ps5Link, _ := bp.AddLink(condition, ps5)
+	tvLink, _ := bp.AddLink(condition, tv)
+	printerLink, _ := bp.AddLink(condition, printer)
+	// add entry link
+	_, _ = bp.AddEntryLinkTo(condition)
 
-    /*
-       Category 1: Electronics
-       - Cell Phone
-       - Laptop
-       - PS5
+	/*
+	   Category 1: Electronics
+	   - Cell Phone
+	   - Laptop
+	   - PS5
 
-       Category 2: Entertainment Devices
-       - Cell Phone
-       - PS5
-       - TV
+	   Category 2: Entertainment Devices
+	   - Cell Phone
+	   - PS5
+	   - TV
 
-       Category 3: Office Devices
-       - Laptop
-       - Printer
-       - Cell Phone
-    */
-    _ = bp.AddLinkToCastGroup("condition", "electronics",
-        cellPhone, laptop, ps5)
-    _ = bp.AddLinkToCastGroup("condition",
-        "entertainment-devices",
-        cellPhone, ps5, tv)
-    _ = bp.AddLinkToCastGroup(
-        "condition", "office-devices",
-        laptop, printer, cellPhone)
+	   Category 3: Office Devices
+	   - Laptop
+	   - Printer
+	   - Cell Phone
+	*/
 
-    _ = bp.BindCastGroupSelectFunc("condition", func(brain zenmodel.BrainRuntime) string {
-        return brain.GetMemory("category").(string)
-    })
+	_ = condition.AddCastGroup("electronics",
+		cellPhoneLink, laptopLink, ps5Link)
+	_ = condition.AddCastGroup("entertainment-devices",
+		cellPhoneLink, ps5Link, tvLink)
+	_ = condition.AddCastGroup("office-devices",
+		laptopLink, printerLink, cellPhoneLink)
 
-    brain := bp.Build()
+	condition.BindCastGroupSelectFunc(func(bcr processor.BrainContextReader) string {
+		return bcr.GetMemory("category").(string)
+	})
 
-    _ = brain.EntryWithMemory("category", "electronics")
-    //_ = brain.EntryWithMemory("category", "entertainment-devices")
-    //_ = brain.EntryWithMemory("category", "office-devices")
-    //_ = brain.EntryWithMemory("category", "NOT-Defined")
+	brain := brainlocal.NewBrainLocal(bp)
 
-    brain.Wait()
+	_ = brain.EntryWithMemory("category", "electronics")
+	//_ = brain.EntryWithMemory("category", "entertainment-devices")
+	//_ = brain.EntryWithMemory("category", "office-devices")
+	//_ = brain.EntryWithMemory("category", "NOT-Defined")
+
+	brain.Wait()
 }
 ```
 
@@ -519,38 +532,40 @@ You can also refer to the example [nested](./examples/flow-topology/nested/main.
 
 ```go
 func main() {
-    bp := zenmodel.NewBrainPrint()
-    bp.AddNeuron("nested", nestedBrain)
-    _, _ = bp.AddEntryLink("nested")
+	bp := zenmodel.NewBlueprint()
+	nested := bp.AddNeuron(nestedBrain)
 
-    brain := bp.Build()
-    _ = brain.Entry()
-    brain.Wait()
+	_, _ = bp.AddEntryLinkTo(nested)
 
-    fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
-    
+	brain := brainlocal.NewBrainLocal(bp)
+	_ = brain.Entry()
+	brain.Wait()
+
+	fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
+	
     // nested result: run here neuron: nested.run
 }
 
-func nestedBrain(outerBrain zenmodel.BrainRuntime) error {
-    bp := zenmodel.NewBrainPrint()
-    bp.AddNeuron("run", func(curBrain zenmodel.BrainRuntime) error {
-        _ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
-        return nil
-    })
-    _, _ = bp.AddEntryLink("run")
+func nestedBrain(outerBrain processor.BrainContext) error {
+	bp := zenmodel.NewBlueprint()
+	run := bp.AddNeuron(func(curBrain processor.BrainContext) error {
+		_ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
+		return nil
+	})
 
-    brain := bp.Build()
+	_, _ = bp.AddEntryLinkTo(run)
 
-    // run nested brain
-    _ = brain.Entry()
-    brain.Wait()
-    // get nested brain result
-    result := brain.GetMemory("result").(string)
-    // pass nested brain result to outer brain
-    _ = outerBrain.SetMemory("nested_result", result)
+	brain := brainlocal.NewBrainLocal(bp)
 
-    return nil
+	// run nested brain
+	_ = brain.Entry()
+	brain.Wait()
+	// get nested brain result
+	result := brain.GetMemory("result").(string)
+	// pass nested brain result to outer brain
+	_ = outerBrain.SetMemory("nested_result", result)
+
+	return nil
 }
 
 ```
@@ -566,17 +581,17 @@ In these cases, you can reuse other Processors within your current Processor or 
 For example, in the `QAProcess` function of [multi-agent/agent-supervisor](./examples/multi-agent/agent-supervisor/qa.go), it reuses the [GoCodeTestProcessor](https://github.com/zenmodel/zenmodel/community/blob/main/processor/go_code_tester/processor.go) from the [zenmodel-contrib](https://github.com/zenmodel/zenmodel/community) community and adds extra functionality after reusing the Processor.
 
 ```go
-func QAProcess(b zenmodel.BrainRuntime) error {
-    p := go_code_tester.NewProcessor().WithTestCodeKeep(true)
-    if err := p.Process(b); err != nil {
-        return err
-    }
+func QAProcess(b processor.BrainContext) error {
+	p := go_code_tester.NewProcessor().WithTestCodeKeep(true)
+	if err := p.Process(b); err != nil {
+		return err
+	}
 
-    if err := b.SetMemory(memKeyFeedback, b.GetCurrentNeuronID()); err != nil {
-        return err
-    }
+	if err := b.SetMemory(memKeyFeedback, b.GetCurrentNeuronID()); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 ```
 
