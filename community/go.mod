@@ -10,7 +10,7 @@ require (
 	github.com/serpapi/google-search-results-golang v0.0.0-20240325113416-ec93f510648e
 	github.com/tosone/minimp3 v1.0.2
 	github.com/veandco/go-sdl2 v0.4.38
-	github.com/zenmodel/zenmodel v0.0.0-20240413180257-b1af54a7ca0f
+	github.com/zenmodel/zenmodel v0.2.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.29.0
 )
@@ -32,5 +32,3 @@ require (
 	golang.org/x/sys v0.25.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/zenmodel/zenmodel => ./..
