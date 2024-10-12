@@ -23,7 +23,7 @@ func main() {
 		return
 	}
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	_ = brain.Entry()
 

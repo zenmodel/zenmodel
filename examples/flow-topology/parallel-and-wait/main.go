@@ -30,7 +30,7 @@ func main() {
 	_ = generate.AddTriggerGroup(inputIn, poetryIn)
 	_ = generate.AddTriggerGroup(inputIn, jokeIn)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	// case 1: entry poetry and input
 	// expect: generate poetry

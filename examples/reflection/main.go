@@ -36,7 +36,7 @@ func main() {
 	generation.BindCastGroupSelectFunc(generationNext)
 
 	// build brain
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{

@@ -120,7 +120,7 @@ func llmNext(bcr processor.BrainContextReader) string {
 Build with various withOpts parameters, although it can be done without configuring any, similar to the example below, using default construction parameters.
 
 ```go
-brain := brainlocal.NewBrainLocal(bp)
+brain := brainlocal.BuildBrain(bp)
 ```
 
 ### Running the `Brain`
@@ -289,7 +289,7 @@ err := neuronObj.AddTriggerGroup(linkObj1, linkObj2)
 Optionally, specific build configuration parameters can also be defined during construction, such as the size of Memory, the number of concurrent Workers for the Brain runtime, etc.
 
 ```go
-brain := brainlocal.NewBrainLocal(bp, brainlocal.WithNeuronWorkerNum(3))
+brain := brainlocal.BuildBrain(bp, brainlocal.WithNeuronWorkerNum(3))
 ```
 
 </details>
@@ -385,7 +385,7 @@ func main() {
 	_ = generate.AddTriggerGroup(inputIn, poetryIn)
 	_ = generate.AddTriggerGroup(inputIn, jokeIn)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	// case 1: entry poetry and input
 	// expect: generate poetry
@@ -509,7 +509,7 @@ func main() {
 		return bcr.GetMemory("category").(string)
 	})
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	_ = brain.EntryWithMemory("category", "electronics")
 	//_ = brain.EntryWithMemory("category", "entertainment-devices")
@@ -537,7 +537,7 @@ func main() {
 
 	_, _ = bp.AddEntryLinkTo(nested)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	_ = brain.Entry()
 	brain.Wait()
 
@@ -555,7 +555,7 @@ func nestedBrain(outerBrain processor.BrainContext) error {
 
 	_, _ = bp.AddEntryLinkTo(run)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	// run nested brain
 	_ = brain.Entry()

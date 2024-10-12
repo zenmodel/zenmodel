@@ -26,7 +26,7 @@ const (
 	defaultMemMaxCost = 1 << 30
 )
 
-func NewBrainLocal(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
+func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
 	b := &BrainLocal{
 		id:      utils.GenID(),
 		labels:  utils.LabelsDeepCopy(blueprint.GetLabels()),

@@ -38,7 +38,7 @@ func main() {
 	llm.BindCastGroupSelectFunc(llmNext)
 
 	// build brain
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: "What is the weather in Boston today?"}})

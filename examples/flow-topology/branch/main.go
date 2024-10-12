@@ -70,7 +70,7 @@ func main() {
 		return bcr.GetMemory("category").(string)
 	})
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	_ = brain.EntryWithMemory("category", "electronics")
 	//_ = brain.EntryWithMemory("category", "entertainment-devices")

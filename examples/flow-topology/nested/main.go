@@ -14,7 +14,7 @@ func main() {
 
 	_, _ = bp.AddEntryLinkTo(nested)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	_ = brain.Entry()
 	brain.Wait()
 
@@ -30,7 +30,7 @@ func nestedBrain(outerBrain processor.BrainContext) error {
 
 	_, _ = bp.AddEntryLinkTo(run)
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	// run nested brain
 	_ = brain.Entry()
