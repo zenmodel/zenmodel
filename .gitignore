@@ -1,3 +1,5 @@
 .git
 .idea
 .env
+.zenmodel/*
+.DS_Store
