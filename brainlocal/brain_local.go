@@ -9,7 +9,7 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/rs/zerolog"
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/utils"
 )
 
@@ -26,11 +26,11 @@ const (
 	defaultMemMaxCost = 1 << 30
 )
 
-func NewBrainLocal(blueprint brain.Blueprint, withOpts ...Option) *BrainLocal {
+func NewBrainLocal(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
 	b := &BrainLocal{
 		id:      utils.GenID(),
 		labels:  utils.LabelsDeepCopy(blueprint.GetLabels()),
-		state:   brain.BrainStateShutdown,
+		state:   core.BrainStateShutdown,
 		neurons: make(map[string]*neuron),
 		links:   make(map[string]*link),
 	}
@@ -89,7 +89,7 @@ type BrainLocal struct {
 	links   map[string]*link
 
 	// brain is in the Running state when there are 1 or more Activate neuron or 1 or more StandBy link.
-	state brain.BrainState
+	state core.BrainState
 	// brain memories
 	BrainMemory
 	BrainMaintainer
@@ -117,7 +117,7 @@ type NeuronRunner struct {
 	nWorkerNum int
 }
 
-func (b *BrainLocal) TrigLinks(links ...brain.Link) error {
+func (b *BrainLocal) TrigLinks(links ...core.Link) error {
 	linkIDs := make([]string, 0)
 	for _, l := range links {
 		if l == nil || l.GetID() == "" {
@@ -206,14 +206,14 @@ func (b *BrainLocal) ClearMemory() {
 	b.BrainMemory.cache.Clear()
 }
 
-func (b *BrainLocal) GetState() brain.BrainState {
+func (b *BrainLocal) GetState() core.BrainState {
 	return b.getState()
 }
 
 func (b *BrainLocal) Wait() {
 	// block when brain running
 	b.mu.Lock()
-	for b.state != brain.BrainStateSleeping && b.state != brain.BrainStateShutdown {
+	for b.state != core.BrainStateSleeping && b.state != core.BrainStateShutdown {
 		b.cond.Wait()
 	}
 	b.mu.Unlock()
@@ -224,7 +224,7 @@ func (b *BrainLocal) Shutdown() {
 	close(b.BrainMaintainer.nQueue)
 	close(b.BrainMaintainer.bQueue)
 	b.BrainMemory.cache.Close()
-	b.setState(brain.BrainStateShutdown)
+	b.setState(core.BrainStateShutdown)
 }
 
 func (b *BrainLocal) trigLinks(linkIDs ...string) error {
@@ -261,9 +261,9 @@ func (b *BrainLocal) trigLinks(linkIDs ...string) error {
 func (b *BrainLocal) trigLink(wg *sync.WaitGroup, l *link) {
 	defer wg.Done()
 
-	if l.status.state != brain.LinkStateReady {
+	if l.status.state != core.LinkStateReady {
 		// change link state as ready
-		l.status.state = brain.LinkStateReady
+		l.status.state = core.LinkStateReady
 
 		// send maintain event
 		b.publishEvent(maintainEvent{

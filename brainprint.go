@@ -2,14 +2,14 @@ package zenmodel
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/errors"
 	"github.com/zenmodel/zenmodel/internal/utils"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
 // NewBlueprint new blueprint
-func NewBlueprint() brain.Blueprint {
+func NewBlueprint() core.Blueprint {
 	return &brainprint{
 		id:      utils.GenID(),
 		labels:  make(map[string]string),
@@ -42,7 +42,7 @@ func (b *brainprint) SetLabels(labels map[string]string) {
 	b.labels = labels
 }
 
-func (b *brainprint) GetNeuron(neuronID string) (brain.Neuron, error) {
+func (b *brainprint) GetNeuron(neuronID string) (core.Neuron, error) {
 	n, ok := b.neurons[neuronID]
 	if !ok {
 		return nil, errors.ErrNeuronNotFound(neuronID)
@@ -55,18 +55,18 @@ func (b *brainprint) HasNeuron(neuronID string) bool {
 	return ok
 }
 
-func (b *brainprint) ListNeurons() []brain.Neuron {
+func (b *brainprint) ListNeurons() []core.Neuron {
 	if len(b.neurons) == 0 {
 		return nil
 	}
-	neurons := make([]brain.Neuron, 0, len(b.neurons))
+	neurons := make([]core.Neuron, 0, len(b.neurons))
 	for _, n := range b.neurons {
 		neurons = append(neurons, n)
 	}
 	return neurons
 }
 
-func (b *brainprint) GetSrcNeuron(linkID string) (brain.Neuron, error) {
+func (b *brainprint) GetSrcNeuron(linkID string) (core.Neuron, error) {
 	l, err := b.GetLink(linkID)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (b *brainprint) GetSrcNeuron(linkID string) (brain.Neuron, error) {
 	return b.GetNeuron(l.GetSrcNeuronID())
 }
 
-func (b *brainprint) GetDestNeuron(linkID string) (brain.Neuron, error) {
+func (b *brainprint) GetDestNeuron(linkID string) (core.Neuron, error) {
 	l, err := b.GetLink(linkID)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (b *brainprint) GetDestNeuron(linkID string) (brain.Neuron, error) {
 	return b.GetNeuron(l.GetDestNeuronID())
 }
 
-func (b *brainprint) GetLink(linkID string) (brain.Link, error) {
+func (b *brainprint) GetLink(linkID string) (core.Link, error) {
 	l, ok := b.links[linkID]
 	if !ok {
 		return nil, errors.ErrLinkNotFound(linkID)
@@ -117,8 +117,8 @@ func (b *brainprint) HasEndLink() bool {
 	return false
 }
 
-func (b *brainprint) ListLinks() []brain.Link {
-	ret := make([]brain.Link, 0, len(b.links))
+func (b *brainprint) ListLinks() []core.Link {
+	ret := make([]core.Link, 0, len(b.links))
 	for _, l := range b.links {
 		ret = append(ret, l)
 	}
@@ -126,8 +126,8 @@ func (b *brainprint) ListLinks() []brain.Link {
 	return ret
 }
 
-func (b *brainprint) ListEntryLinks() []brain.Link {
-	ret := make([]brain.Link, 0)
+func (b *brainprint) ListEntryLinks() []core.Link {
+	ret := make([]core.Link, 0)
 	for _, l := range b.links {
 		if l.IsEntryLink() {
 			ret = append(ret, l)
@@ -137,8 +137,8 @@ func (b *brainprint) ListEntryLinks() []brain.Link {
 	return ret
 }
 
-func (b *brainprint) ListEndLinks() []brain.Link {
-	ret := make([]brain.Link, 0)
+func (b *brainprint) ListEndLinks() []core.Link {
+	ret := make([]core.Link, 0)
 	for _, l := range b.links {
 		if l.IsEndLink() {
 			ret = append(ret, l)
@@ -148,11 +148,11 @@ func (b *brainprint) ListEndLinks() []brain.Link {
 	return ret
 }
 
-func (b *brainprint) ListInLinks(neuronID string) []brain.Link {
+func (b *brainprint) ListInLinks(neuronID string) []core.Link {
 	if !b.HasNeuron(neuronID) {
 		return nil
 	}
-	ret := make([]brain.Link, 0, len(b.links))
+	ret := make([]core.Link, 0, len(b.links))
 	for _, l := range b.links {
 		if l.dest == neuronID {
 			ret = append(ret, l)
@@ -162,11 +162,11 @@ func (b *brainprint) ListInLinks(neuronID string) []brain.Link {
 	return ret
 }
 
-func (b *brainprint) ListOutLinks(neuronID string) []brain.Link {
+func (b *brainprint) ListOutLinks(neuronID string) []core.Link {
 	if !b.HasNeuron(neuronID) {
 		return nil
 	}
-	ret := make([]brain.Link, 0, len(b.links))
+	ret := make([]core.Link, 0, len(b.links))
 	for _, l := range b.links {
 		if l.src == neuronID {
 			ret = append(ret, l)
@@ -176,15 +176,15 @@ func (b *brainprint) ListOutLinks(neuronID string) []brain.Link {
 	return ret
 }
 
-func (b *brainprint) AddNeuron(processFn func(bc processor.BrainContext) error, withOpts ...brain.NeuronOption) brain.Neuron {
+func (b *brainprint) AddNeuron(processFn func(bc processor.BrainContext) error, withOpts ...core.NeuronOption) core.Neuron {
 	return b.addNeuronWithProcessor(processor.NewFuncProcessor(processFn), withOpts...)
 }
 
-func (b *brainprint) AddNeuronWithProcessor(processor processor.Processor, withOpts ...brain.NeuronOption) brain.Neuron {
+func (b *brainprint) AddNeuronWithProcessor(processor processor.Processor, withOpts ...core.NeuronOption) core.Neuron {
 	return b.addNeuronWithProcessor(processor, withOpts...)
 }
 
-func (b *brainprint) AddLink(from, to brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+func (b *brainprint) AddLink(from, to core.Neuron, withOpts ...core.LinkOption) (core.Link, error) {
 	// validate
 	src, ok := b.neurons[from.GetID()]
 	if !ok {
@@ -208,7 +208,7 @@ func (b *brainprint) AddLink(from, to brain.Neuron, withOpts ...brain.LinkOption
 	return l, nil
 }
 
-func (b *brainprint) AddEntryLinkTo(to brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+func (b *brainprint) AddEntryLinkTo(to core.Neuron, withOpts ...core.LinkOption) (core.Link, error) {
 	// validate
 	dest, ok := b.neurons[to.GetID()]
 	if !ok {
@@ -227,7 +227,7 @@ func (b *brainprint) AddEntryLinkTo(to brain.Neuron, withOpts ...brain.LinkOptio
 	return l, nil
 }
 
-func (b *brainprint) AddEndLinkFrom(from brain.Neuron, withOpts ...brain.LinkOption) (brain.Link, error) {
+func (b *brainprint) AddEndLinkFrom(from core.Neuron, withOpts ...core.LinkOption) (core.Link, error) {
 	// validate
 	src, ok := b.neurons[from.GetID()]
 	if !ok {
@@ -249,7 +249,7 @@ func (b *brainprint) AddEndLinkFrom(from brain.Neuron, withOpts ...brain.LinkOpt
 	return l, nil
 }
 
-func (b *brainprint) Clone() brain.Blueprint {
+func (b *brainprint) Clone() core.Blueprint {
 	if b == nil {
 		return nil
 	}
@@ -290,7 +290,7 @@ func (ls linkArray) MarshalZerologArray(a *zerolog.Array) {
 	}
 }
 
-func (b *brainprint) addNeuronWithProcessor(p processor.Processor, withOpts ...brain.NeuronOption) brain.Neuron {
+func (b *brainprint) addNeuronWithProcessor(p processor.Processor, withOpts ...core.NeuronOption) core.Neuron {
 	n := newNeuron(p)
 	for _, opt := range withOpts {
 		opt.Apply(n)
@@ -301,7 +301,7 @@ func (b *brainprint) addNeuronWithProcessor(p processor.Processor, withOpts ...b
 }
 
 func (b *brainprint) ensureEndNeuron() *neuron {
-	n, ok := b.neurons[brain.EndNeuronID]
+	n, ok := b.neurons[core.EndNeuronID]
 	if ok {
 		return n
 	}

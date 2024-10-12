@@ -2,7 +2,7 @@ package brainlocal
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 )
 
 type maintainEvent struct {
@@ -37,7 +37,7 @@ func (m maintainEvent) MarshalZerologObject(e *zerolog.Event) {
 }
 
 func (b *BrainLocal) publishEvent(event maintainEvent) {
-	if b.getState() == brain.BrainStateShutdown || b.bQueue == nil { // 关闭中或没启动
+	if b.getState() == core.BrainStateShutdown || b.bQueue == nil { // 关闭中或没启动
 		return
 	}
 	b.logger.Debug().Interface("event", event).Msg("publish maintain event")

@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/errors"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
 func (b *BrainLocal) ensureMaintainerStart() {
-	if b.getState() == brain.BrainStateShutdown {
+	if b.getState() == core.BrainStateShutdown {
 		b.maintainerStart()
-		b.setState(brain.BrainStateSleeping)
+		b.setState(core.BrainStateSleeping)
 	}
 
 	return
@@ -24,7 +24,7 @@ func (b *BrainLocal) maintainerStart() {
 		Int("neuronQueueLen", b.nQueueLen).
 		Msg("brain maintainer start")
 	// 关闭残留的队列，相关的 goroutine 也会随之终结
-	if b.getState() != brain.BrainStateShutdown {
+	if b.getState() != core.BrainStateShutdown {
 		b.Shutdown()
 	}
 
@@ -146,7 +146,7 @@ func (b *BrainLocal) handleBrainEvent(action eventAction) error {
 }
 
 func (b *BrainLocal) tryActivateNeuron(n *neuron) error {
-	if n.status.state == brain.NeuronStateActivated {
+	if n.status.state == core.NeuronStateActivated {
 		b.logger.Debug().Str("neuronID", n.id).Msg("neuron already activated")
 		return nil
 	}
@@ -158,7 +158,7 @@ func (b *BrainLocal) tryActivateNeuron(n *neuron) error {
 	}
 
 	// should END, send brain sleep message
-	if n.id == brain.EndNeuronID {
+	if n.id == core.EndNeuronID {
 		b.logger.Info().Msg("arrival at END neuron")
 		b.publishEvent(maintainEvent{
 			kind:   eventKindBrain,
@@ -173,7 +173,7 @@ func (b *BrainLocal) tryActivateNeuron(n *neuron) error {
 }
 
 func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
-	if !isCastAnyway && n.status.state != brain.NeuronStateInactive {
+	if !isCastAnyway && n.status.state != core.NeuronStateInactive {
 		b.logger.Debug().
 			Str("neuronID", n.id).
 			Msg("neuron already active, should not cast")
@@ -202,22 +202,22 @@ func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
 		selectedLinks[l.id] = struct{}{}
 
 		switch l.status.state {
-		case brain.LinkStateWait:
-			l.status.state = brain.LinkStateReady
+		case core.LinkStateWait:
+			l.status.state = core.LinkStateReady
 			b.publishEvent(maintainEvent{
 				kind:   eventKindLink,
 				action: eventActionLinkReady,
 				id:     l.id,
 			})
 
-		case brain.LinkStateInit:
+		case core.LinkStateInit:
 			if !isCastAnyway {
 				b.logger.Debug().
 					Str("neuronID", n.id).
 					Str("link", l.id).
 					Msg("link on init state, will not cast")
 			} else {
-				l.status.state = brain.LinkStateReady
+				l.status.state = core.LinkStateReady
 				b.publishEvent(maintainEvent{
 					kind:   eventKindLink,
 					action: eventActionLinkReady,
@@ -225,7 +225,7 @@ func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
 				})
 			}
 
-		case brain.LinkStateReady:
+		case core.LinkStateReady:
 			if !isCastAnyway {
 				b.logger.Debug().
 					Str("neuronID", n.id).
@@ -253,11 +253,11 @@ func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
 				continue
 			}
 			if !isCastAnyway { // 未选择的 out-link 状态从 wait 变为 init
-				if l.status.state == brain.LinkStateWait {
-					l.status.state = brain.LinkStateInit
+				if l.status.state == core.LinkStateWait {
+					l.status.state = core.LinkStateInit
 				}
 			} else { // 未选择的 out-link 状态变为 wait, 因为之前的 cast anyway 可能会将 link 设置为 init 或 ready
-				l.status.state = brain.LinkStateWait
+				l.status.state = core.LinkStateWait
 			}
 
 		}
@@ -268,7 +268,7 @@ func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
 
 func (b *BrainLocal) ifNeuronShouldActivate(neu *neuron) bool {
 	state := b.getState()
-	if state == brain.BrainStateSleeping || state == brain.BrainStateShutdown {
+	if state == core.BrainStateSleeping || state == core.BrainStateShutdown {
 		return false
 	}
 
@@ -276,7 +276,7 @@ func (b *BrainLocal) ifNeuronShouldActivate(neu *neuron) bool {
 	for _, links := range neu.spec.triggerGroups {
 		trigLinks := make([]*link, 0)
 		for _, l := range links {
-			if l.status.state == brain.LinkStateReady {
+			if l.status.state == core.LinkStateReady {
 				trigLinks = append(trigLinks, l)
 			} else {
 				break
@@ -309,7 +309,7 @@ func (b *BrainLocal) refreshState() {
 			id:     b.id,
 		})
 	} else { // > 0, set to running
-		b.setState(brain.BrainStateRunning)
+		b.setState(core.BrainStateRunning)
 	}
 }
 
@@ -317,9 +317,9 @@ func (b *BrainLocal) getNeuronCountByState() (int, int) {
 	var inactiveCnt, activateCnt int
 	for _, neu := range b.neurons {
 		switch neu.status.state {
-		case brain.NeuronStateInactive:
+		case core.NeuronStateInactive:
 			inactiveCnt++
-		case brain.NeuronStateActivated:
+		case core.NeuronStateActivated:
 			activateCnt++
 		}
 	}
@@ -331,11 +331,11 @@ func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 	var initCnt, waitCnt, readyCnt int
 	for _, l := range b.links {
 		switch l.status.state {
-		case brain.LinkStateInit:
+		case core.LinkStateInit:
 			initCnt++
-		case brain.LinkStateWait:
+		case core.LinkStateWait:
 			waitCnt++
-		case brain.LinkStateReady:
+		case core.LinkStateReady:
 			readyCnt++
 		}
 	}
@@ -345,22 +345,22 @@ func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 
 func (b *BrainLocal) ForceSleep() {
 	for _, l := range b.links {
-		l.status.state = brain.LinkStateInit
+		l.status.state = core.LinkStateInit
 	}
 	for _, neu := range b.neurons {
-		neu.status.state = brain.NeuronStateInactive
+		neu.status.state = core.NeuronStateInactive
 	}
-	b.setState(brain.BrainStateSleeping)
+	b.setState(core.BrainStateSleeping)
 }
 
-func (b *BrainLocal) setState(state brain.BrainState) {
+func (b *BrainLocal) setState(state core.BrainState) {
 	b.mu.Lock()
 	b.state = state
 	b.cond.Broadcast() // Notify all waiting goroutines
 	b.mu.Unlock()
 }
 
-func (b *BrainLocal) getState() brain.BrainState {
+func (b *BrainLocal) getState() core.BrainState {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.state

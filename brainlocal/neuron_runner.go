@@ -3,12 +3,12 @@ package brainlocal
 import (
 	"fmt"
 
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/errors"
 )
 
 func (b *BrainLocal) publishEventActivateNeuron(neuronID string) {
-	if b.getState() == brain.BrainStateShutdown || b.nQueue == nil { // 关闭中或没启动
+	if b.getState() == core.BrainStateShutdown || b.nQueue == nil { // 关闭中或没启动
 		return
 	}
 	b.logger.Debug().Interface("neuronID", neuronID).Msg("publish activate neuron event")
@@ -37,18 +37,18 @@ func (b *BrainLocal) activateNeuron(neu *neuron) error {
 	}
 
 	b.logger.Debug().Interface("neuronID", neu.id).Msg("start activate neuron")
-	neu.status.state = brain.NeuronStateActivated
+	neu.status.state = core.NeuronStateActivated
 	// in-link set init
 	for _, links := range neu.spec.triggerGroups {
 		for _, l := range links {
-			l.status.state = brain.LinkStateInit
+			l.status.state = core.LinkStateInit
 		}
 	}
 
 	// out-link set wait
 	for _, links := range neu.spec.castGroups {
 		for _, l := range links {
-			l.status.state = brain.LinkStateWait
+			l.status.state = core.LinkStateWait
 		}
 	}
 
@@ -58,7 +58,7 @@ func (b *BrainLocal) activateNeuron(neu *neuron) error {
 		b:               b,
 		currentNeuronID: neu.id,
 	})
-	neu.status.state = brain.NeuronStateInactive
+	neu.status.state = core.NeuronStateInactive
 	if err != nil {
 		neu.status.count.failed++
 		return fmt.Errorf("process neuron error: %w", err)

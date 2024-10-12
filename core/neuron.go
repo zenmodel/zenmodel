@@ -1,4 +1,4 @@
-package brain
+package core
 
 import "github.com/zenmodel/zenmodel/processor"
 

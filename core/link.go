@@ -1,4 +1,4 @@
-package brain
+package core
 
 const (
 	EntryLinkFrom = "__EXTERNAL_SIGNAL__"

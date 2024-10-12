@@ -1,7 +1,7 @@
 package brainlocal
 
 import (
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/utils"
 	"github.com/zenmodel/zenmodel/processor"
 )
@@ -24,7 +24,7 @@ type neuronSpec struct {
 }
 
 type neuronStatus struct {
-	state brain.NeuronState
+	state core.NeuronState
 	count struct {
 		process int
 		succeed int
@@ -32,7 +32,7 @@ type neuronStatus struct {
 	}
 }
 
-func newNeuron(n brain.Neuron, linkMap map[string]*link) *neuron {
+func newNeuron(n core.Neuron, linkMap map[string]*link) *neuron {
 	neu := &neuron{
 		id:     n.GetID(),
 		labels: utils.LabelsDeepCopy(n.GetLabels()),
@@ -43,7 +43,7 @@ func newNeuron(n brain.Neuron, linkMap map[string]*link) *neuron {
 			castGroups:    make(map[string][]*link),
 		},
 		status: neuronStatus{
-			state: brain.NeuronStateInactive,
+			state: core.NeuronStateInactive,
 		},
 	}
 

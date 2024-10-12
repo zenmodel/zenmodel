@@ -1,4 +1,4 @@
-package brain
+package core
 
 const (
 	// BrainStateShutdown brain 实现所使用的资源均已经释放或清空

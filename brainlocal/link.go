@@ -1,7 +1,7 @@
 package brainlocal
 
 import (
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 )
 
 type link struct {
@@ -18,7 +18,7 @@ type linkSpec struct {
 }
 
 type linkStatus struct {
-	state brain.LinkState
+	state core.LinkState
 	count struct {
 		// from 执行完整，开始尝试传递的次数
 		process int
@@ -29,7 +29,7 @@ type linkStatus struct {
 	}
 }
 
-func newLink(l brain.Link) *link {
+func newLink(l core.Link) *link {
 	return &link{
 		id: l.GetID(),
 		spec: linkSpec{
@@ -37,13 +37,13 @@ func newLink(l brain.Link) *link {
 			to:   l.GetDestNeuronID(),
 		},
 		status: linkStatus{
-			state: brain.LinkStateInit,
+			state: core.LinkStateInit,
 		},
 	}
 }
 
 func (l *link) isEntryLink() bool {
-	if l.spec.from == brain.EntryLinkFrom {
+	if l.spec.from == core.EntryLinkFrom {
 		return true
 	}
 
