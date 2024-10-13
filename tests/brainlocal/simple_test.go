@@ -1,10 +1,11 @@
-package brainlite
+package tests
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/zenmodel/zenmodel"
+	"github.com/zenmodel/zenmodel/brainlocal"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
@@ -24,7 +25,7 @@ func TestSimpleBrain(t *testing.T) {
 		return
 	}
 
-	brain := BuildBrain(bp)
+	brain := brainlocal.BuildBrain(bp)
 
 	_ = brain.Entry()
 
