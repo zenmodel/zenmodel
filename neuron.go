@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog"
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/errors"
 	"github.com/zenmodel/zenmodel/internal/utils"
 	"github.com/zenmodel/zenmodel/processor"
@@ -25,7 +25,7 @@ func newNeuron(p processor.Processor) *neuron {
 
 func newEndNeuron() *neuron {
 	n := &neuron{
-		id:            brain.EndNeuronID,
+		id:            core.EndNeuronID,
 		labels:        make(map[string]string),
 		processor:     &processor.EmptyProcessor{},
 		triggerGroups: make(triggerGroups),
@@ -178,7 +178,7 @@ func (n *neuron) SetLabels(labels map[string]string) {
 // 如果新划分的 trigger group 包含了存量的 trigger group ，那存量的 trigger group 将被移除，
 // 如果新划分的 trigger group 被存量的 trigger group 包含，那么不会创建新划分的组，
 // 因为只需要定义最大的触发条件，就会包含小的触发条件. 举例来说: 当 {A,B,C} 满足时 {A,B} 必定满足.
-func (n *neuron) AddTriggerGroup(links ...brain.Link) error {
+func (n *neuron) AddTriggerGroup(links ...core.Link) error {
 	if len(links) == 0 {
 		return nil
 	}
@@ -215,7 +215,7 @@ func (n *neuron) AddTriggerGroup(links ...brain.Link) error {
 // 指定 link 如果原本属于 default group，则先从 default group 中移除
 // 指定 link 如果原本属于 其他非 default group，不会从其他 group 中移除
 // 如果 groupName 已存在，则追加指定 link 划入该 group 中，该 group 原有的 link 不会变
-func (n *neuron) AddCastGroup(groupName string, links ...brain.Link) error {
+func (n *neuron) AddCastGroup(groupName string, links ...core.Link) error {
 	if groupName == "" {
 		return fmt.Errorf("group name is empty")
 	}

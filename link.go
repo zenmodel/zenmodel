@@ -2,7 +2,7 @@ package zenmodel
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/zenmodel/zenmodel/brain"
+	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/utils"
 )
 
@@ -19,7 +19,7 @@ func newEntryLink(destNeuronID string) *link {
 	return &link{
 		id:     utils.GenIDShort(),
 		labels: make(map[string]string),
-		src:    brain.EntryLinkFrom,
+		src:    core.EntryLinkFrom,
 		dest:   destNeuronID,
 	}
 }
@@ -29,7 +29,7 @@ func newEndLink(srcNeuronID string) *link {
 		id:     utils.GenIDShort(),
 		labels: make(map[string]string),
 		src:    srcNeuronID,
-		dest:   brain.EndLinkTo,
+		dest:   core.EndLinkTo,
 	}
 }
 
@@ -65,11 +65,11 @@ func (l *link) SetLabels(labels map[string]string) {
 }
 
 func (l *link) IsEntryLink() bool {
-	return l.src == brain.EntryLinkFrom
+	return l.src == core.EntryLinkFrom
 }
 
 func (l *link) IsEndLink() bool {
-	return l.dest == brain.EndLinkTo
+	return l.dest == core.EndLinkTo
 }
 
 func (l *link) deepCopy() *link {

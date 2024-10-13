@@ -1,4 +1,4 @@
-package brainlocal
+package brainlite
 
 import (
 	"github.com/zenmodel/zenmodel/core"

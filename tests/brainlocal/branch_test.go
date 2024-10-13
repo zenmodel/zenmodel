@@ -1,14 +1,15 @@
-package main
+package tests
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/brainlocal"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
-func main() {
+func TestBranch(t *testing.T) {
 	bp := zenmodel.NewBlueprint()
 	condition := bp.AddNeuron(func(bc processor.BrainContext) error {
 		return nil // do nothing
@@ -39,24 +40,24 @@ func main() {
 	ps5Link, _ := bp.AddLink(condition, ps5)
 	tvLink, _ := bp.AddLink(condition, tv)
 	printerLink, _ := bp.AddLink(condition, printer)
-	// add entry link
+
 	_, _ = bp.AddEntryLinkTo(condition)
 
 	/*
-	   Category 1: Electronics
-	   - Cell Phone
-	   - Laptop
-	   - PS5
+	Category 1: Electronics
+	- Cell Phone
+	- Laptop
+	- PS5
 
-	   Category 2: Entertainment Devices
-	   - Cell Phone
-	   - PS5
-	   - TV
+	Category 2: Entertainment Devices
+	- Cell Phone
+	- PS5
+	- TV
 
-	   Category 3: Office Devices
-	   - Laptop
-	   - Printer
-	   - Cell Phone
+	Category 3: Office Devices
+	- Laptop
+	- Printer
+	- Cell Phone
 	*/
 
 	_ = condition.AddCastGroup("electronics",
@@ -72,10 +73,22 @@ func main() {
 
 	brain := brainlocal.BuildBrain(bp)
 
+	fmt.Println("-----\nTesting Electronics category:")
 	_ = brain.EntryWithMemory("category", "electronics")
-	//_ = brain.EntryWithMemory("category", "entertainment-devices")
-	//_ = brain.EntryWithMemory("category", "office-devices")
-	//_ = brain.EntryWithMemory("category", "NOT-Defined")
-
 	brain.Wait()
+
+	fmt.Println("-----\nTesting Entertainment Devices category:")
+	_ = brain.EntryWithMemory("category", "entertainment-devices")
+	brain.Wait()
+
+	fmt.Println("-----\nTesting Office Devices category:")
+	_ = brain.EntryWithMemory("category", "office-devices")
+	brain.Wait()
+
+	fmt.Println("-----\nTesting undefined category:")
+	_ = brain.EntryWithMemory("category", "NOT-Defined")
+	brain.Wait()
+
+	brain.Shutdown()
 }
+

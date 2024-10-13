@@ -44,7 +44,7 @@ func main() {
 	neuronPlanner.BindCastGroupSelectFunc(replanerNext)
 
 	// build brain
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	// set memory and trig all entry links
 	_ = brain.EntryWithMemory(memKeyObjective, "what is the hometown of the 2024 Australia open winner?")
 	// block process util brain sleeping

@@ -1,17 +1,19 @@
-package main
+package tests
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/brainlocal"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
-func main() {
+func TestSimpleBrain(t *testing.T) {
 	bp := zenmodel.NewBlueprint()
 	n1 := bp.AddNeuron(fn1)
 	n2 := bp.AddNeuron(fn2)
+	
 	_, err := bp.AddLink(n1, n2)
 	if err != nil {
 		fmt.Printf("add link error: %s\n", err)
@@ -31,6 +33,7 @@ func main() {
 
 	name := brain.GetMemory("name").(string)
 	fmt.Printf("result: my name is %s.\n", name)
+	brain.Shutdown()
 }
 
 func fn1(b processor.BrainContext) error {

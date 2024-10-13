@@ -40,7 +40,7 @@ func main() {
 		return bcr.GetMemory(memKeyDecision).(string)
 	})
 
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	_ = brain.EntryWithMemory(memKeyDemand, "Help me write a function `func Add (x, y int) int` with golang to implement addition, and implement unit test in a separate _test .go file, at least 3 test cases are required")
 	brain.Wait()
 	fmt.Printf("Response: %s\n", brain.GetMemory(memKeyResponse).(string))

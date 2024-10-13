@@ -1,4 +1,4 @@
-package brainlocal
+package brainlite
 
 import (
 	"fmt"
@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/rs/zerolog"
 	"github.com/zenmodel/zenmodel/core"
 	"github.com/zenmodel/zenmodel/internal/utils"
+	"github.com/zenmodel/zenmodel/internal/errors"
 )
 
 const (
@@ -20,14 +20,10 @@ const (
 	defaultNQueueLen = 10
 	// default number of neuron process workers
 	defaultNWorkerNum = 4
-	// default number of keys to track frequency of (10M)
-	defaultMemNumCounters = 1e7
-	// default maximum cost of cache (1GB)
-	defaultMemMaxCost = 1 << 30
 )
 
-func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
-	b := &BrainLocal{
+func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLite {
+	b := &BrainLite{
 		id:      utils.GenID(),
 		labels:  utils.LabelsDeepCopy(blueprint.GetLabels()),
 		state:   core.BrainStateShutdown,
@@ -68,8 +64,7 @@ func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
 	}).With().Caller().Timestamp().Logger().Level(zerolog.InfoLevel)
 	b.BrainMaintainer.nQueueLen = defaultNQueueLen
 	b.BrainMaintainer.nWorkerNum = defaultNWorkerNum
-	b.BrainMemory.numCounters = defaultMemNumCounters
-	b.BrainMemory.maxCost = defaultMemMaxCost
+	b.BrainMemory.datasourceName = fmt.Sprintf("%s.db", b.id)
 
 	for _, opt := range withOpts {
 		opt.apply(b)
@@ -81,7 +76,7 @@ func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLocal {
 	return b
 }
 
-type BrainLocal struct {
+type BrainLite struct {
 	id     string
 	labels map[string]string
 
@@ -99,11 +94,6 @@ type BrainLocal struct {
 	cond   *sync.Cond
 }
 
-type BrainMemory struct {
-	cache       *ristretto.Cache
-	numCounters int64
-	maxCost     int64
-}
 type BrainMaintainer struct {
 	bQueue chan maintainEvent
 	stop   chan struct{}
@@ -117,7 +107,7 @@ type NeuronRunner struct {
 	nWorkerNum int
 }
 
-func (b *BrainLocal) TrigLinks(links ...core.Link) error {
+func (b *BrainLite) TrigLinks(links ...core.Link) error {
 	linkIDs := make([]string, 0)
 	for _, l := range links {
 		if l == nil || l.GetID() == "" {
@@ -128,7 +118,7 @@ func (b *BrainLocal) TrigLinks(links ...core.Link) error {
 	return b.trigLinks(linkIDs...)
 }
 
-func (b *BrainLocal) Entry() error {
+func (b *BrainLite) Entry() error {
 	// get all entry links
 	linkIDs := make([]string, 0)
 	for _, l := range b.links {
@@ -140,7 +130,7 @@ func (b *BrainLocal) Entry() error {
 	return b.trigLinks(linkIDs...)
 }
 
-func (b *BrainLocal) EntryWithMemory(keysAndValues ...interface{}) error {
+func (b *BrainLite) EntryWithMemory(keysAndValues ...interface{}) error {
 	if err := b.SetMemory(keysAndValues...); err != nil {
 		return err
 	}
@@ -148,69 +138,82 @@ func (b *BrainLocal) EntryWithMemory(keysAndValues ...interface{}) error {
 	return b.Entry()
 }
 
-func (b *BrainLocal) SetMemory(keysAndValues ...interface{}) error {
+func (b *BrainLite) SetMemory(keysAndValues ...interface{}) error {
 	if len(keysAndValues)%2 != 0 {
 		return fmt.Errorf("key and value are not paired")
 	}
 	if err := b.ensureMemoryInit(); err != nil {
-		// TODO wrap error
 		return err
 	}
 
 	for i := 0; i < len(keysAndValues); i += 2 {
 		k := keysAndValues[i]
 		v := keysAndValues[i+1]
-		b.BrainMemory.cache.Set(k, v, 1) // TODO maybe calculate cost
+		// TODO batch set
+		if err := b.BrainMemory.Set(k, v); err != nil {
+			return errors.Wrapf(err, "set memory failed")
+		}
 		b.logger.Debug().
 			Any("key", k).
 			Any("value", v).
 			Msg("set memory")
 	}
-	b.BrainMemory.cache.Wait()
 
 	return nil
 }
 
-func (b *BrainLocal) GetMemory(key any) any {
-	if b.BrainMemory.cache == nil {
+func (b *BrainLite) GetMemory(key any) any {
+	if b.BrainMemory.db == nil {
 		return nil
 	}
-	v, _ := b.BrainMemory.cache.Get(key)
+	v, err := b.BrainMemory.Get(key)
+	if err != nil {
+		b.logger.Error().Err(err).Msg("get memory failed")
+		return nil
+	}
 
 	return v
 }
 
-func (b *BrainLocal) ExistMemory(key any) bool {
-	if b.BrainMemory.cache == nil {
+func (b *BrainLite) ExistMemory(key any) bool {
+	if b.BrainMemory.db == nil {
 		return false
 	}
 
-	_, ok := b.BrainMemory.cache.Get(key)
+	_, err := b.BrainMemory.Get(key)
+	if err != nil {
+		b.logger.Error().Err(err).Msg("get memory failed")
+		return false
+	}
 
-	return ok
+	return true
 }
 
-func (b *BrainLocal) DeleteMemory(key any) {
-	if b.BrainMemory.cache == nil {
+func (b *BrainLite) DeleteMemory(key any) {
+	if b.BrainMemory.db == nil {
 		return
 	}
 
-	b.BrainMemory.cache.Del(key)
+	if err := b.BrainMemory.Del(key); err != nil {
+		b.logger.Error().Err(err).Msg("delete memory failed")
+	}
 }
 
-func (b *BrainLocal) ClearMemory() {
-	if b.BrainMemory.cache == nil {
+func (b *BrainLite) ClearMemory() {
+	if b.BrainMemory.db == nil {
 		return
 	}
 
-	b.BrainMemory.cache.Clear()
+	if err := b.BrainMemory.Clear(); err != nil {
+		b.logger.Error().Err(err).Msg("clear memory failed")
+	}
 }
 
-func (b *BrainLocal) GetState() core.BrainState {
+func (b *BrainLite) GetState() core.BrainState {
 	return b.getState()
 }
 
-func (b *BrainLocal) Wait() {
+func (b *BrainLite) Wait() {
 	// block when brain running
 	b.mu.Lock()
 	for b.state != core.BrainStateSleeping && b.state != core.BrainStateShutdown {
@@ -219,15 +222,17 @@ func (b *BrainLocal) Wait() {
 	b.mu.Unlock()
 }
 
-func (b *BrainLocal) Shutdown() {
+func (b *BrainLite) Shutdown() {
 	b.logger.Info().Msg("brain local shutdown")
 	close(b.BrainMaintainer.nQueue)
 	close(b.BrainMaintainer.bQueue)
-	b.BrainMemory.cache.Close()
+	if err := b.BrainMemory.Close(); err != nil {
+		b.logger.Error().Err(err).Msg("close memory failed")
+	}
 	b.setState(core.BrainStateShutdown)
 }
 
-func (b *BrainLocal) trigLinks(linkIDs ...string) error {
+func (b *BrainLite) trigLinks(linkIDs ...string) error {
 	if len(linkIDs) == 0 {
 		return nil
 	}
@@ -258,7 +263,7 @@ func (b *BrainLocal) trigLinks(linkIDs ...string) error {
 	return nil
 }
 
-func (b *BrainLocal) trigLink(wg *sync.WaitGroup, l *link) {
+func (b *BrainLite) trigLink(wg *sync.WaitGroup, l *link) {
 	defer wg.Done()
 
 	if l.status.state != core.LinkStateReady {
@@ -276,25 +281,10 @@ func (b *BrainLocal) trigLink(wg *sync.WaitGroup, l *link) {
 	return
 }
 
-func (b *BrainLocal) ensureMemoryInit() error {
-	if b.BrainMemory.cache != nil {
+func (b *BrainLite) ensureMemoryInit() error {
+	if b.BrainMemory.db != nil {
 		return nil
 	}
 
-	return b.initMemory()
-}
-
-func (b *BrainLocal) initMemory() error {
-	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: b.BrainMemory.numCounters,
-		MaxCost:     b.BrainMemory.maxCost,
-		BufferItems: 64, // number of keys per Get buffer.
-	})
-	if err != nil {
-		// TODO Wrap error
-		return err
-	}
-	b.BrainMemory.cache = cache
-
-	return nil
+	return b.BrainMemory.Init()
 }

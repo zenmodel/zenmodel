@@ -75,7 +75,7 @@ func SearchAgent(query string) (result string, err error) {
 		return "", err
 	}
 	// build brain
-	brain := brainlocal.NewBrainLocal(bp)
+	brain := brainlocal.BuildBrain(bp)
 	// set memory and trig all entry links
 	if err = brain.EntryWithMemory(
 		"messages", []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: query}},

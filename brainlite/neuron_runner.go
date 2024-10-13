@@ -1,4 +1,4 @@
-package brainlocal
+package brainlite
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/zenmodel/zenmodel/internal/errors"
 )
 
-func (b *BrainLocal) publishEventActivateNeuron(neuronID string) {
+func (b *BrainLite) publishEventActivateNeuron(neuronID string) {
 	if b.getState() == core.BrainStateShutdown || b.nQueue == nil { // 关闭中或没启动
 		return
 	}
@@ -16,7 +16,7 @@ func (b *BrainLocal) publishEventActivateNeuron(neuronID string) {
 	b.nQueue <- neuronID
 }
 
-func (b *BrainLocal) runNeuronWorker() {
+func (b *BrainLite) runNeuronWorker() {
 	for neuronID := range b.nQueue {
 		neu, ok := b.neurons[neuronID]
 		if !ok {
@@ -31,7 +31,7 @@ func (b *BrainLocal) runNeuronWorker() {
 	}
 }
 
-func (b *BrainLocal) activateNeuron(neu *neuron) error {
+func (b *BrainLite) activateNeuron(neu *neuron) error {
 	if neu == nil {
 		return errors.ErrNeuronNotFound("nil")
 	}

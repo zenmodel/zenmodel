@@ -1,4 +1,4 @@
-package brainlocal
+package brainlite
 
 import (
 	"github.com/rs/zerolog"
@@ -36,7 +36,7 @@ func (m maintainEvent) MarshalZerologObject(e *zerolog.Event) {
 		Str("id", m.id)
 }
 
-func (b *BrainLocal) publishEvent(event maintainEvent) {
+func (b *BrainLite) publishEvent(event maintainEvent) {
 	if b.getState() == core.BrainStateShutdown || b.bQueue == nil { // 关闭中或没启动
 		return
 	}

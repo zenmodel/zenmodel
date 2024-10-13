@@ -15,6 +15,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 )

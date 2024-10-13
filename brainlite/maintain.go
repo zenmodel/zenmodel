@@ -1,4 +1,4 @@
-package brainlocal
+package brainlite
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/zenmodel/zenmodel/processor"
 )
 
-func (b *BrainLocal) ensureMaintainerStart() {
+func (b *BrainLite) ensureMaintainerStart() {
 	if b.getState() == core.BrainStateShutdown {
 		b.maintainerStart()
 		b.setState(core.BrainStateSleeping)
@@ -18,7 +18,7 @@ func (b *BrainLocal) ensureMaintainerStart() {
 	return
 }
 
-func (b *BrainLocal) maintainerStart() {
+func (b *BrainLite) maintainerStart() {
 	b.logger.Info().
 		Int("neuronWorkerNum", b.nWorkerNum).
 		Int("neuronQueueLen", b.nQueueLen).
@@ -39,13 +39,13 @@ func (b *BrainLocal) maintainerStart() {
 
 }
 
-func (b *BrainLocal) runBrainMaintainer() {
+func (b *BrainLite) runBrainMaintainer() {
 	for msg := range b.bQueue {
 		b.maintain(msg)
 	}
 }
 
-func (b *BrainLocal) maintain(event maintainEvent) {
+func (b *BrainLite) maintain(event maintainEvent) {
 	b.logger.Debug().Interface("event", event).Msg("got a maintain event")
 
 	switch event.kind {
@@ -77,7 +77,7 @@ func (b *BrainLocal) maintain(event maintainEvent) {
 	return
 }
 
-func (b *BrainLocal) handleLinkEvent(action eventAction, linkID string) error {
+func (b *BrainLite) handleLinkEvent(action eventAction, linkID string) error {
 	l, ok := b.links[linkID]
 	if !ok {
 		return errors.ErrLinkNotFound(linkID)
@@ -109,7 +109,7 @@ func (b *BrainLocal) handleLinkEvent(action eventAction, linkID string) error {
 	return nil
 }
 
-func (b *BrainLocal) handleNeuronEvent(action eventAction, neuronID string) error {
+func (b *BrainLite) handleNeuronEvent(action eventAction, neuronID string) error {
 	n, ok := b.neurons[neuronID]
 	if !ok {
 		return errors.ErrNeuronNotFound(neuronID)
@@ -132,7 +132,7 @@ func (b *BrainLocal) handleNeuronEvent(action eventAction, neuronID string) erro
 	return nil
 }
 
-func (b *BrainLocal) handleBrainEvent(action eventAction) error {
+func (b *BrainLite) handleBrainEvent(action eventAction) error {
 	switch action {
 	case eventActionBrainSleep:
 		b.ForceSleep()
@@ -145,7 +145,7 @@ func (b *BrainLocal) handleBrainEvent(action eventAction) error {
 	}
 }
 
-func (b *BrainLocal) tryActivateNeuron(n *neuron) error {
+func (b *BrainLite) tryActivateNeuron(n *neuron) error {
 	if n.status.state == core.NeuronStateActivated {
 		b.logger.Debug().Str("neuronID", n.id).Msg("neuron already activated")
 		return nil
@@ -172,7 +172,7 @@ func (b *BrainLocal) tryActivateNeuron(n *neuron) error {
 	return nil
 }
 
-func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
+func (b *BrainLite) neuronCast(n *neuron, isCastAnyway bool) error {
 	if !isCastAnyway && n.status.state != core.NeuronStateInactive {
 		b.logger.Debug().
 			Str("neuronID", n.id).
@@ -266,7 +266,7 @@ func (b *BrainLocal) neuronCast(n *neuron, isCastAnyway bool) error {
 	return nil
 }
 
-func (b *BrainLocal) ifNeuronShouldActivate(neu *neuron) bool {
+func (b *BrainLite) ifNeuronShouldActivate(neu *neuron) bool {
 	state := b.getState()
 	if state == core.BrainStateSleeping || state == core.BrainStateShutdown {
 		return false
@@ -290,7 +290,7 @@ func (b *BrainLocal) ifNeuronShouldActivate(neu *neuron) bool {
 	return false
 }
 
-func (b *BrainLocal) refreshState() {
+func (b *BrainLite) refreshState() {
 	inactiveCnt, activateCnt := b.getNeuronCountByState()
 	initCnt, waitCnt, readyCnt := b.getLinkCountByState()
 
@@ -313,7 +313,7 @@ func (b *BrainLocal) refreshState() {
 	}
 }
 
-func (b *BrainLocal) getNeuronCountByState() (int, int) {
+func (b *BrainLite) getNeuronCountByState() (int, int) {
 	var inactiveCnt, activateCnt int
 	for _, neu := range b.neurons {
 		switch neu.status.state {
@@ -327,7 +327,7 @@ func (b *BrainLocal) getNeuronCountByState() (int, int) {
 	return inactiveCnt, activateCnt
 }
 
-func (b *BrainLocal) getLinkCountByState() (int, int, int) {
+func (b *BrainLite) getLinkCountByState() (int, int, int) {
 	var initCnt, waitCnt, readyCnt int
 	for _, l := range b.links {
 		switch l.status.state {
@@ -343,7 +343,7 @@ func (b *BrainLocal) getLinkCountByState() (int, int, int) {
 	return initCnt, waitCnt, readyCnt
 }
 
-func (b *BrainLocal) ForceSleep() {
+func (b *BrainLite) ForceSleep() {
 	for _, l := range b.links {
 		l.status.state = core.LinkStateInit
 	}
@@ -353,14 +353,14 @@ func (b *BrainLocal) ForceSleep() {
 	b.setState(core.BrainStateSleeping)
 }
 
-func (b *BrainLocal) setState(state core.BrainState) {
+func (b *BrainLite) setState(state core.BrainState) {
 	b.mu.Lock()
 	b.state = state
 	b.cond.Broadcast() // Notify all waiting goroutines
 	b.mu.Unlock()
 }
 
-func (b *BrainLocal) getState() core.BrainState {
+func (b *BrainLite) getState() core.BrainState {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.state

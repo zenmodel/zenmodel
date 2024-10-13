@@ -1,30 +1,38 @@
-package main
+package tests
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/zenmodel/zenmodel"
 	"github.com/zenmodel/zenmodel/brainlocal"
 	"github.com/zenmodel/zenmodel/processor"
 )
 
-func main() {
+func TestNested(t *testing.T) {
 	bp := zenmodel.NewBlueprint()
 	nested := bp.AddNeuron(nestedBrain)
 
 	_, _ = bp.AddEntryLinkTo(nested)
 
 	brain := brainlocal.BuildBrain(bp)
+	
+	fmt.Println("-----\nTesting Nested Brain:")
 	_ = brain.Entry()
 	brain.Wait()
 
-	fmt.Printf("nested result: %s\n", brain.GetMemory("nested_result").(string))
+	result := brain.GetMemory("nested_result").(string)
+	fmt.Printf("Nested result: %s\n", result)
+
+	brain.Shutdown()
 }
 
 func nestedBrain(outerBrain processor.BrainContext) error {
 	bp := zenmodel.NewBlueprint()
 	run := bp.AddNeuron(func(curBrain processor.BrainContext) error {
-		_ = curBrain.SetMemory("result", fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID()))
+		result := fmt.Sprintf("run here neuron: %s.%s", outerBrain.GetCurrentNeuronID(), curBrain.GetCurrentNeuronID())
+		fmt.Printf("Inner Brain: %s\n", result)
+		_ = curBrain.SetMemory("result", result)
 		return nil
 	})
 
@@ -32,13 +40,12 @@ func nestedBrain(outerBrain processor.BrainContext) error {
 
 	brain := brainlocal.BuildBrain(bp)
 
-	// run nested brain
 	_ = brain.Entry()
 	brain.Wait()
-	// get nested brain result
 	result := brain.GetMemory("result").(string)
-	// pass nested brain result to outer brain
 	_ = outerBrain.SetMemory("nested_result", result)
+	
+	brain.Shutdown()
 
 	return nil
 }
