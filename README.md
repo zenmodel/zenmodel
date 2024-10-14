@@ -127,9 +127,10 @@ func llmNext(bcr processor.BrainContextReader) string {
 
 Build with various withOpts parameters, although it can be done without configuring any, similar to the example below, using default construction parameters.
 
-For BrainLocal (default):
+Use BrainLocal implementation to build Brain, you can also use other implementations
 ```go
 brain := brainlocal.BuildBrain(bp)
+// brain := brainlite.BuildBrain(bp)
 ```
 
 ### Running the `Brain`
@@ -222,7 +223,7 @@ neuronObj := bp.AddNeuron(processFn)
 neuronObj2 := bp.AddNeuronWithProcessor(processor)
 ```
 
-The function signature for ProcessFn is as follows, where BrainRuntime is mainly used for reading and writing to the Brain's Memory, details of which are introduced in the [BrainRuntime section](#BrainRuntime).
+The function signature for ProcessFn is as follows, where BrainContext is mainly used for reading and writing to the Brain's Memory, details of which are introduced in the [BrainContext section](#BrainContext).
 
 ```go
 // processFn signature
@@ -294,7 +295,7 @@ err := neuronObj.AddTriggerGroup(linkObj1, linkObj2)
 <details>
 <summary>Expand to view</summary>
 
-`Blueprint` is Brain Blueprint, defining the graph topology structure of the Brain, as well as all Neurons and Links, in addition to the Brain's operational parameters. A runnable `Brain` can be built from the `Blueprint`.
+`Blueprint` defining the graph topology structure of the Brain, as well as all Neurons and Links, in addition to the Brain's operational parameters. A runnable `Brain` can be built from the `Blueprint`.
 Optionally, specific build configuration parameters can also be defined during construction, such as the size of Memory, the number of concurrent Workers for the Brain runtime, etc.
 
 ```go
@@ -315,12 +316,14 @@ The operation of the Brain is asynchronous, and it does not block the program wa
 
 Users or developers can wait for certain Memory to reach the expected value, or wait for all Neurons to have executed and for the Brain to enter Sleeping, then read Memory to retrieve results. Alternatively, they can keep the Brain running, continually generating outputs.
 
+Use Brain.Shutdown() to release all resource of the current Brain.
+
 #### Memory
 
 `Memory` is the runtime context of the Brain. It remains intact after the Brain goes to sleep and will not be cleared unless `ClearMemory()` is called.
 Users can read from and write to Memory during Brain operation via Neuron Processing functions, preset Memory before operation, or read and write Memory from outside (as opposed to within the Neuron Process function) during or after operation.
 
-#### BrainRuntime
+#### BrainContext
 
 The `ProcessFn` and `CastGroupSelectFunc` functions both include the `BrainRuntime` as part of their parameters. The `BrainRuntime` encapsulates some information about the Brain's runtime, such as the Memory at the time the current Neuron is running, the ID of the Neuron currently being executed. These pieces of information are commonly used in the logic of function execution, and often involve writing to Memory. There are also cases where it is necessary to maintain the operation of the current Neuron while triggering downstream Neurons. The `BrainRuntime` interface is as follows:
 
