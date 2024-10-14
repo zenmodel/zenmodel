@@ -15,7 +15,15 @@
 
 ## Overview
 
-[ZenModel](https://github.com/zenmodel/zenmodel) is a workflow programming framework designed for constructing agentic applications with LLMs. It implements by the scheduling of computational units (`Neuron`), that may include loops, by constructing a `Brain` (a directed graph that can have cycles) or support the loop-less DAGs. A `Brain` consists of multiple `Neurons` connected by `Link`s. Inspiration was drawn from [LangGraph](https://github.com/langchain-ai/langgraph). The `Memory` of a `Brain` leverages [ristretto](https://github.com/dgraph-io/ristretto) for its implementation.
+[ZenModel](https://github.com/zenmodel/zenmodel) is a workflow programming framework designed for constructing agentic applications with LLMs. It implements by the scheduling of computational units (`Neuron`), that may include loops, by constructing a `Brain` (a directed graph that can have cycles) or support the loop-less DAGs. A `Brain` consists of multiple `Neurons` connected by `Link`s. Inspiration was drawn from [LangGraph](https://github.com/langchain-ai/langgraph).
+
+ZenModel supports multiple implementations of the `Brain` interface:
+
+1. **BrainLocal**: The default implementation. It uses [ristretto](https://github.com/dgraph-io/ristretto) for in-memory `Memory` management.
+
+2. **BrainLite**: A lightweight implementation that uses SQLite for `Memory` management, allowing for persistent storage and potential support for multi-language Processors.
+
+Developers can choose the appropriate Brain implementation based on their specific requirements.
 
 - Developers can build a `Brain` with any process flow:
     - Sequential: Execute `Neuron`s in order.
@@ -119,6 +127,7 @@ func llmNext(bcr processor.BrainContextReader) string {
 
 Build with various withOpts parameters, although it can be done without configuring any, similar to the example below, using default construction parameters.
 
+For BrainLocal (default):
 ```go
 brain := brainlocal.BuildBrain(bp)
 ```

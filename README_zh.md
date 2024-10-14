@@ -9,27 +9,30 @@
 
 [//]: # ([![Release]&#40;https://img.shields.io/github/release/zenmodel/zenmodel.svg?style=flat-square&#41;]&#40;https://github.com/zenmodel/zenmodel/releases&#41;)
 
- [English](./README.md) | [中文](./README_zh.md) 
+[中文](./README_zh.md) | [English](./README.md)
 
-***使用 Golang 去开发 Agentic 大模型应用***
+***使用 Golang 开发 Agentic 大模型应用***
 
 ## 概述
 
-[ZenModel](https://github.com/zenmodel/zenmodel) 是一个用于构建大模型应用的工作流编程框架。它通过构建 `Brain`(
-一个有向的、允许有环的图)
-来支持调度存在环路的计算单元（`Neuron`）或者无环 DAG 的运行。`Brain` 由多个 `Neuron` 组成，`Neuron` 之间通过 `Link`
-连接。它的灵感来自 [LangGraph](https://github.com/langchain-ai/langgraph) 。 Brain `Memory`
-引用 [ristretto](https://github.com/dgraph-io/ristretto) 实现。
+[ZenModel](https://github.com/zenmodel/zenmodel) 是一个用于构建大模型应用的工作流编程框架。它通过构建 `Brain`（一个有向的、允许有环的图）来支持调度存在环路的计算单元（`Neuron`）或者无环 DAG 的运行。`Brain` 由多个 `Neuron` 组成，`Neuron` 之间通过 `Link` 连接。它的灵感来自 [LangGraph](https://github.com/langchain-ai/langgraph)。
 
-- 开发者可以构建出任意执行流程的 `Brain` 。
+ZenModel 支持多种 `Brain` 接口的实现：
+
+1. **BrainLocal**：默认实现。使用 [ristretto](https://github.com/dgraph-io/ristretto) 进行内存中的 `Memory` 管理。
+
+2. **BrainLite**：轻量级实现，使用 SQLite 进行 `Memory` 管理，允许持久化存储并支持多语言 Processors。
+
+开发者可以根据具体需求选择合适的 Brain 实现。
+
+- 开发者可以构建出任意执行流程的 `Brain`：
     - 串行：按顺序执行 `Neuron`。
-    - 并行与等待：并发的执行 `Neuron`，并且支持下游 `Neuron` 等待指定的上游全都执行完成后才开始执行。
+    - 并行与等待：并发执行 `Neuron`，并且支持下游 `Neuron` 等待指定的上游全都执行完成后才开始执行。
     - 分支：执行流程只传播到某一或某些下游分支。
     - 循环：循环对于类似代理（Agent）的行为很重要，您在循环中调用 LLM，询问它下一步要采取什么行动。
     - 有终点：在特定条件下结束运行。比如得到了想要的结果后结束运行。
     - 无终点：持续运行。例如语音通话的场景，持续监听用户说话。
-- 每个 `Neuron` 是实际的计算单元，开发者可以自定义 `Neuron` 来实现包括 LLM
-  调用、其他多模态模型调用等任意处理过程（`Processor`）以及处理的超时、重试等控制机制。
+- 每个 `Neuron` 是实际的计算单元，开发者可以自定义 `Neuron` 来实现包括 LLM 调用、其他多模态模型调用等任意处理过程（`Processor`）以及处理的超时、重试等控制机制。
 - 开发者可以在任意时机获取运行的结果，通常我们可以等待 `Brain` 停止运行后或者是某个 `Memory` 达到预期值之后去获取结果。
 
 ## 安装
