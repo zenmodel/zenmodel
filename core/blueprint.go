@@ -31,3 +31,10 @@ type Blueprint interface {
 
 	Clone() Blueprint
 }
+
+// MultiLangBlueprint is extension interface of Blueprint, it is used for supporting multi-language blueprint
+type MultiLangBlueprint interface {
+	Blueprint
+	// AddNeuronWithPyProcessor add a neuron with a python processor
+	AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, withOpts ...NeuronOption) Neuron
+}

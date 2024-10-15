@@ -22,7 +22,7 @@ const (
 	defaultNWorkerNum = 4
 )
 
-func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLite {
+func BuildBrain(blueprint core.MultiLangBlueprint, withOpts ...Option) *BrainLite {
 	b := &BrainLite{
 		id:      utils.GenID(),
 		labels:  utils.LabelsDeepCopy(blueprint.GetLabels()),
