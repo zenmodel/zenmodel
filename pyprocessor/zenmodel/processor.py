@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from brain_context import BrainContext
+from .brain_context import BrainContext
 
 class Processor(ABC):
     @abstractmethod
