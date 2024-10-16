@@ -14,6 +14,12 @@ type BrainContext interface {
 	ClearMemory()
 	// GetCurrentNeuronID get current neuron id
 	GetCurrentNeuronID() string
+	// GetCurrentNeuronLabels get current neuron labels
+	GetCurrentNeuronLabels() map[string]string
+	// GetBrainID get brain id
+	GetBrainID() string 
+	// GetBrainLabels get brain labels
+	GetBrainLabels() map[string]string
 	// ContinueCast keep current process running, and continue cast
 	ContinueCast()
 	// TODO Context 继承 context.Context
@@ -27,8 +33,6 @@ type BrainContextReader interface {
 	ExistMemory(key interface{}) bool
 	// GetCurrentNeuronID get current neuron id
 	GetCurrentNeuronID() string
-	// ContinueCast keep current process running, and continue cast
-	ContinueCast()
 	// TODO Context 继承 context.Context
 	//context.Context
 }

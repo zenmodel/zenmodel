@@ -6,10 +6,21 @@ import (
 	"github.com/zenmodel/zenmodel/internal/errors"
 	"github.com/zenmodel/zenmodel/internal/utils"
 	"github.com/zenmodel/zenmodel/processor"
+	"github.com/zenmodel/zenmodel/pyprocessor"
 )
 
 // NewBlueprint new blueprint
 func NewBlueprint() core.Blueprint {
+	return &brainprint{
+		id:      utils.GenID(),
+		labels:  make(map[string]string),
+		neurons: make(map[string]*neuron),
+		links:   make(map[string]*link),
+	}
+}
+
+// NewMultiLangBlueprint new multi-language blueprint
+func NewMultiLangBlueprint() core.MultiLangBlueprint {
 	return &brainprint{
 		id:      utils.GenID(),
 		labels:  make(map[string]string),
@@ -181,6 +192,11 @@ func (b *brainprint) AddNeuron(processFn func(bc processor.BrainContext) error, 
 }
 
 func (b *brainprint) AddNeuronWithProcessor(processor processor.Processor, withOpts ...core.NeuronOption) core.Neuron {
+	return b.addNeuronWithProcessor(processor, withOpts...)
+}
+
+func (b *brainprint) AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, withOpts ...core.NeuronOption) core.Neuron {
+	processor := pyprocessor.LoadPythonProcessor(pyCodePath, moduleName, processorClassName)
 	return b.addNeuronWithProcessor(processor, withOpts...)
 }
 

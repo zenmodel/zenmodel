@@ -354,8 +354,6 @@ type BrainContextReader interface {
 	ExistMemory(key interface{}) bool
 	// GetCurrentNeuronID get current neuron id
 	GetCurrentNeuronID() string
-	// ContinueCast keep current process running, and continue cast
-	ContinueCast()
 }
 
 ```

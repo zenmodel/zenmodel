@@ -3,3 +3,6 @@
 .env
 .zenmodel/*
 .DS_Store
+build/
+dist/
+zenmodel.egg-info/

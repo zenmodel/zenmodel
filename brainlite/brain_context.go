@@ -29,6 +29,18 @@ func (c *brainContext) GetCurrentNeuronID() string {
 	return c.currentNeuronID
 }
 
+func (c *brainContext) GetCurrentNeuronLabels() map[string]string {
+	return c.b.neurons[c.currentNeuronID].labels
+}
+
+func (c *brainContext) GetBrainID() string {
+	return c.b.id
+}
+
+func (c *brainContext) GetBrainLabels() map[string]string {
+	return c.b.labels
+}
+
 func (c *brainContext) ContinueCast() {
 	_, ok := c.b.neurons[c.currentNeuronID]
 	if !ok {
