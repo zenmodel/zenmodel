@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from brain_context import BrainContextReader
+from .brain_context import BrainContextReader
 
 DEFAULT_CAST_GROUP_NAME = "__DEFAULT_CAST_GROUP__"
 
