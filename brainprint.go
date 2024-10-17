@@ -195,8 +195,9 @@ func (b *brainprint) AddNeuronWithProcessor(processor processor.Processor, withO
 	return b.addNeuronWithProcessor(processor, withOpts...)
 }
 
-func (b *brainprint) AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, withOpts ...core.NeuronOption) core.Neuron {
-	processor := pyprocessor.LoadPythonProcessor(pyCodePath, moduleName, processorClassName)
+func (b *brainprint) AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, constructorArgs map[string]interface{}, withOpts ...core.NeuronOption) core.Neuron {
+	processor := pyprocessor.LoadPythonProcessor(pyCodePath, moduleName, processorClassName, constructorArgs)
+	withOpts = append(withOpts, core.WithNeuronLabels(map[string]string{"language": "python"}))
 	return b.addNeuronWithProcessor(processor, withOpts...)
 }
 

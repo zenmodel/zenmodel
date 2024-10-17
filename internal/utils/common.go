@@ -72,3 +72,13 @@ func LabelsDeepCopy(labels map[string]string) map[string]string {
 
 	return newMap
 }
+
+func MergeLabels(labels ...map[string]string) map[string]string {
+	ret := make(map[string]string)
+	for _, label := range labels {
+		for k, v := range label {
+			ret[k] = v
+		}
+	}
+	return ret
+}
