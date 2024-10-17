@@ -35,6 +35,54 @@ Developers can choose the appropriate Brain implementation based on their specif
 - Each `Neuron` is a concrete computational unit, and developers can customize `Neuron` to implement any processing procedure (`Processor`), including LLM calls, other multimodal model invocations, and control mechanisms like timeouts and retries.
 - Developers can retrieve the results at any time, typically after the `Brain` has stopped running or when a certain `Memory` has reached an expected value.
 
+## New Feature: Multi-language Support
+
+ZenModel now supports multi-language development, particularly introducing support for Python processors. This means you can mix Processors written in Go and Python within the same Brain, taking full advantage of both languages.
+
+### Python Processor Example
+
+Here's a simple example of a Python Processor. For a complete example, see [examples/multi-lang](examples/multi-lang).
+
+```python
+from zenmodel import Processor, BrainContext
+
+
+class SetNameProcessor(Processor):
+    def __init__(self, lastname: str):
+        self.lastname = lastname
+        print(f"SetNameProcessor initialized with firstname: {lastname}")
+
+    def process(self, ctx: BrainContext):
+        print("Starting SetNameProcessor.process() method")
+        
+        name = ctx.get_memory("name")
+        name = f"{name} {self.lastname}"
+        ctx.set_memory("name", name)
+
+        print(f"Name updated in memory: {name}")
+        
+        return
+```
+
+Below demonstrates how to add a Neuron using a Python Processor and build a MultiLangBrain.
+
+### Using Python Processor in Go
+
+You can easily integrate Python Processors in your Go code:
+
+```go
+// new multi-language blueprint
+bp := zenmodel.NewMultiLangBlueprint()
+// example python processor in ./a/b/c/setname.py - class SetNameProcessor,
+// and object constructor args: def __init__(self, lastname: str)
+n1 := bp.AddNeuronWithPyProcessor("a/b/c", "setname", "SetNameProcessor", map[string]interface{}{"lastname": "Zhang"})
+// ...
+// build multi-language brain
+brain := brainlocal.BuildMultiLangBrain(bp)
+```
+
+This multi-language support provides developers with greater flexibility, allowing you to fully utilize the ecosystems and libraries of different programming languages.
+
 ## Installation
 
 With [Go module](https://github.com/golang/go/wiki/Modules) support, simply add the following import to your code, and then `go mod [tidy|download]` will automatically fetch the necessary dependencies.
@@ -49,6 +97,11 @@ Otherwise, run the following Go command to install the `zenmodel` package:
 $ go get -u github.com/zenmodel/zenmodel
 ```
 
+If you want to build a multi-language Brain, you need to install the Python package, and implement the Python Processor:
+
+```sh
+$ pip install zenmodel
+```
 
 ## Quick Start
 Let's use `zenmodel` to build a `Brain` as shown below.

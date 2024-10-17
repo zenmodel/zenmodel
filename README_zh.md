@@ -35,6 +35,54 @@ ZenModel 支持多种 `Brain` 接口的实现：
 - 每个 `Neuron` 是实际的计算单元，开发者可以自定义 `Neuron` 来实现包括 LLM 调用、其他多模态模型调用等任意处理过程（`Processor`）以及处理的超时、重试等控制机制。
 - 开发者可以在任意时机获取运行的结果，通常我们可以等待 `Brain` 停止运行后或者是某个 `Memory` 达到预期值之后去获取结果。
 
+## 新特性：多语言支持
+
+ZenModel 现在支持多语言开发,特别是引入了 Python processor 的支持。这意味着您可以在同一个 Brain 中混合使用 Go 和 Python 编写的 Processors,充分利用两种语言的优势。
+
+### Python Processor 示例
+
+以下是一个简单的 Python Processor 示例，完整示例见 [examples/multi-lang](examples/multi-lang)。
+
+```python
+from zenmodel import Processor, BrainContext
+
+
+class SetNameProcessor(Processor):
+    def __init__(self, lastname: str):
+        self.lastname = lastname
+        print(f"SetNameProcessor initialized with firstname: {lastname}")
+
+    def process(self, ctx: BrainContext):
+        print("Starting SetNameProcessor.process() method")
+        
+        name = ctx.get_memory("name")
+        name = f"{name} {self.lastname}"
+        ctx.set_memory("name", name)
+
+        print(f"Name updated in memory: {name}")
+        
+        return
+```
+
+下面展示了如何使用 Python Processor 添加 Neuron，并构建 MultiLangBrain。
+
+### 在 Go 中使用 Python Processor
+
+您可以在 Go 代码中轻松集成 Python Processor:
+
+```go
+// new multi-language blueprint
+bp := zenmodel.NewMultiLangBlueprint()
+// example python processor in ./a/b/c/setname.py - class SetNameProcessor,
+// and object constructor args: def __init__(self, lastname: str)
+n1 := bp.AddNeuronWithPyProcessor("a/b/c", "setname", "SetNameProcessor", map[string]interface{}{"lastname": "Zhang"})
+// ...
+// build multi-language brain
+brain := brainlocal.BuildMultiLangBrain(bp)
+```
+
+这种多语言支持为开发者提供了更大的灵活性,允许您充分利用不同编程语言的生态系统和库。
+
 ## 安装
 
 使用[Go module](https://github.com/golang/go/wiki/Modules)，只需添加以下导入到您的代码，然后 `go mod [tidy|download]` 将自动获取必要的依赖项。
@@ -49,6 +97,11 @@ import "github.com/zenmodel/zenmodel"
 $ go get -u github.com/zenmodel/zenmodel
 ```
 
+如果构建多语言的 Brain，需要安装 Python 包, 并且实现 Python Processor：
+
+```sh
+$ pip install zenmodel
+```
 
 ## 快速入门
 
@@ -275,7 +328,7 @@ neuronObj.BindCastGroupSelectFunc(selectFn)
 也就是说默认情况下，在 Neuron 执行完成后，当前 Neuron 的所有 `出向连接(out-link)` 都是并行触发的(注意：这不代表下游所有
 Neuron 都会被激活，还需要看下游 Neuron 的 TriggerGroup 配置)。
 
-如果需要分支选择，那就需要添加 CastGroup 并且绑定 CastGroupSelectFunc，被选中的 CastGroup 中的所有 `出向连接(out-link)`
+如果需要��支选择，那就需要添加 CastGroup 并且绑定 CastGroupSelectFunc，被选中的 CastGroup 中的所有 `出向连接(out-link)`
 都将会并行触发（同上，下游 Neuron 是否被激活还需看下游 Neuron 的 TriggerGroup 配置）。
 
 ```go
