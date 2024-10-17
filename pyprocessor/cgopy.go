@@ -1,6 +1,11 @@
+//go:build ignore
+// +build ignore
+
 package pyprocessor
 
 /*
+#cgo pkg-config: python3
+#cgo CFLAGS: -I/usr/include/python3.9
 #include "pyprocessor_wrapper.h"
 */
 import "C"
@@ -142,7 +147,8 @@ func (p *PyProcessor) Close() {
 	}
 }
 
-func LoadPythonProcessor(pyCodePath, moduleName, processorClassName string) processor.Processor {
+// 废弃的函数
+func  DeprecatedLoadPythonProcessor(pyCodePath, moduleName, processorClassName string) processor.Processor {
 	ensurePythonInitialized()
 	if !pythonInitialized {
 		panic("Failed to initialize Python interpreter")

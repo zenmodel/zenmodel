@@ -22,7 +22,7 @@ const (
 	defaultNWorkerNum = 4
 )
 
-func BuildBrain(blueprint core.MultiLangBlueprint, withOpts ...Option) *BrainLite {
+func BuildBrain(blueprint core.Blueprint, withOpts ...Option) *BrainLite {
 	b := &BrainLite{
 		id:      utils.GenID(),
 		labels:  utils.LabelsDeepCopy(blueprint.GetLabels()),
@@ -74,6 +74,10 @@ func BuildBrain(blueprint core.MultiLangBlueprint, withOpts ...Option) *BrainLit
 
 	b.logger.Info().Interface("blueprint", blueprint).Msg("brain build success")
 	return b
+}
+
+func BuildMultiLangBrain(blueprint core.MultiLangBlueprint, withOpts ...Option) *BrainLite {
+	return BuildBrain(blueprint, withOpts...)
 }
 
 type BrainLite struct {

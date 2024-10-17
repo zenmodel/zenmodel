@@ -36,5 +36,5 @@ type Blueprint interface {
 type MultiLangBlueprint interface {
 	Blueprint
 	// AddNeuronWithPyProcessor add a neuron with a python processor
-	AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, withOpts ...NeuronOption) Neuron
+	AddNeuronWithPyProcessor(pyCodePath, moduleName, processorClassName string, constructorArgs map[string]interface{}, withOpts ...NeuronOption) Neuron
 }

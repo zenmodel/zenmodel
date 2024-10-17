@@ -1,6 +1,9 @@
 package core
 
-import "github.com/zenmodel/zenmodel/processor"
+import (
+	"github.com/zenmodel/zenmodel/internal/utils"
+	"github.com/zenmodel/zenmodel/processor"
+)
 
 const (
 	EndNeuronID = "__END_NEURON__"
@@ -45,7 +48,8 @@ func (f neuronOptionFunc) Apply(neuron Neuron) {
 // WithNeuronLabels sets the specific labels for Neuron
 func WithNeuronLabels(labels map[string]string) NeuronOption {
 	return neuronOptionFunc(func(neuron Neuron) {
-		neuron.SetLabels(labels)
+		origin := neuron.GetLabels()
+		neuron.SetLabels(utils.MergeLabels(origin, labels))
 	})
 }
 
@@ -60,5 +64,13 @@ func WithSelectFn(selectFn func(brain processor.BrainContextReader) string) Neur
 func WithSelector(selector processor.Selector) NeuronOption {
 	return neuronOptionFunc(func(neuron Neuron) {
 		neuron.BindCastGroupSelector(selector)
+	})
+}
+
+// WithPyProcessExecCmd sets the specific python command for Neuron
+func WithPyProcessExecCmd(pythonCmd string) NeuronOption {
+	return neuronOptionFunc(func(neuron Neuron) {
+		origin := neuron.GetLabels()
+		neuron.SetLabels(utils.MergeLabels(origin, map[string]string{"python_cmd": pythonCmd}))
 	})
 }
